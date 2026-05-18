@@ -1,0 +1,126 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <form method="POST" class="row justify-content-center">
+        {% csrf_token %}
+        <div class="col-lg-10">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                            {% if activity %}Update{% else %}New{% endif %} Farming Activity
+                        </h5>
+                        <p class="mb-0 small text-secondary">Log operations tracking inputs, capital metrics, and workflows</p>
+                    </div>
+                    <i class="bi bi-folder-plus fs-3 text-secondary"></i>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary small fw-bold text-uppercase">Activity Identifier Name</label>
+                            <input type="text" name="activity_name" class="form-control" placeholder="e.g. Maize Season A / Broiler Batch 5" value="{{ activity.activity_name|default:'' }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary small fw-bold text-uppercase">Classification Category</label>
+                            <select name="category" class="form-select fw-semibold text-dark">
+                                <option value="crops" {% if activity.category == 'crops' %}selected{% endif %}>Crops Division</option>
+                                <option value="livestock" {% if activity.category == 'livestock' %}selected{% endif %}>Livestock Division</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary small fw-bold text-uppercase">Commencement Date</label>
+                            <input type="date" name="date_started" class="form-control font-monospace" value="{{ activity.date_started|date:'Y-m-d' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 p-3 bg-light rounded-3 mx-0 mb-4 border border-secondary border-opacity-10">
+                        <div class="col-md-6 border-end border-secondary border-opacity-25 pe-md-4">
+                            <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+                                <i class="bi bi-egg-fill me-2 fs-5"></i>Livestock Allocation Ledger
+                            </h6>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium">Feeds Purchases & Nutrition Costs</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white text-muted font-monospace">KES</span>
+                                    <input type="number" step="0.01" name="feeds_cost" class="form-control font-monospace text-end" value="{{ activity.feeds_cost|default:'0.00' }}">
+                                </div>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label text-muted small fw-medium">Veterinary, Treatments & Medicine Expenses</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white text-muted font-monospace">KES</span>
+                                    <input type="number" step="0.01" name="vet_expenses" class="form-control font-monospace text-end" value="{{ activity.vet_expenses|default:'0.00' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="text-success fw-bold mb-3 d-flex align-items-center">
+                                <i class="bi bi-tree-fill me-2 fs-5"></i>Crop Allocation Ledger
+                            </h6>
+                            <div class="row g-2">
+                                <div class="col-6 mb-2">
+                                    <label class="form-label text-muted small fw-medium">Seed / Planting Cost</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white text-muted font-monospace">KES</span>
+                                        <input type="number" step="0.01" name="seed_cost" class="form-control font-monospace text-end" value="{{ activity.seed_cost|default:'0.00' }}">
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <label class="form-label text-muted small fw-medium">Fertilizer & Topdress</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white text-muted font-monospace">KES</span>
+                                        <input type="number" step="0.01" name="fertilizer_cost" class="form-control font-monospace text-end" value="{{ activity.fertilizer_cost|default:'0.00' }}">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label text-muted small fw-medium">Land Prep Mechanical Outflows (Ploughing, etc.)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white text-muted font-monospace">KES</span>
+                                        <input type="number" step="0.01" name="land_prep_cost" class="form-control font-monospace text-end" value="{{ activity.land_prep_cost|default:'0.00' }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold text-uppercase">Total Shared Labor Costs</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white text-muted font-monospace">KES</span>
+                                <input type="number" step="0.01" name="labor_cost" class="form-control font-monospace text-end text-danger fw-semibold" value="{{ activity.labor_cost|default:'0.00' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-success small fw-bold text-uppercase">Gross Sales Income Generated</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success bg-opacity-10 border-success text-success font-monospace">KES</span>
+                                <input type="number" step="0.01" name="sales_income" class="form-control border-success font-monospace text-end text-success fw-bold" value="{{ activity.sales_income|default:'0.00' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small fw-bold text-uppercase d-block mb-2">Lifecycle Stage Parameters</label>
+                            <div class="form-check form-switch p-2 bg-light border rounded-3 d-flex align-items-center justify-content-between px-3" style="height: 38px;">
+                                <label class="form-check-label small text-dark fw-medium" for="closeCheck">Close Project Cycle</label>
+                                <input class="form-check-input ms-0" type="checkbox" name="is_closed" id="closeCheck" {% if activity.is_closed %}checked{% endif %}>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-top">
+                    <a href="{% url 'farming_list' %}" class="btn btn-light fw-semibold text-muted border-0">
+                        <i class="bi bi-arrow-left me-1"></i>Cancel & Return
+                    </a>
+                    <button type="submit" class="btn btn-success fw-semibold px-5 shadow-sm">
+                        <i class="bi bi-check-circle-fill me-2"></i>Save Project Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

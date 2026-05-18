@@ -1,0 +1,63 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0">Record Asset Maintenance</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Asset</label>
+                            <select name="asset" class="form-select" required>
+                                <option value="">-- Choose Asset --</option>
+                                {% for asset in assets %}
+                                <option value="{{ asset.id }}" {% if selected_asset.id == asset.id %}selected{% endif %}>
+                                    {{ asset.name }} ({{ asset.reg_number }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Service Date</label>
+                                <input type="date" name="service_date" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Maintenance Cost (KES)</label>
+                                <input type="number" step="0.01" name="cost" class="form-control" placeholder="0.00" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Serviced By / Vendor Name</label>
+                            <input type="text" name="serviced_by" class="form-control" placeholder="e.g., Garage X / IT Support">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Next Service Date (Optional)</label>
+                            <input type="date" name="next_service_date" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description of Work</label>
+                            <textarea name="description" class="form-control" rows="4" placeholder="Describe parts replaced or service done..." required></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Save Record</button>
+                            <a href="{% url 'maintenance_list' %}" class="btn btn-light">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

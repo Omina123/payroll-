@@ -1,0 +1,95 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <form method="POST" class="row justify-content-center">
+        {% csrf_token %}
+        <div class="col-lg-10">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                            {% if transaction %}Update Ledger Entry{% else %}Post to Ledger{% endif %}
+                        </h5>
+                        <p class="mb-0 small text-secondary">Commit double-entry operational values directly to the master cash book context</p>
+                    </div>
+                    <i class="bi bi-journal-plus fs-3 text-secondary"></i>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6 border-end border-secondary border-opacity-10 pe-md-4">
+                            <h6 class="text-secondary fw-bold mb-3 small text-uppercase" style="letter-spacing: 0.5px;">Classification Parameters</h6>
+                            
+                            <div class="mb-4">
+                                <label class="form-label text-muted small fw-medium">Transaction Type Selection</label>
+                                <div class="btn-group w-100 shadow-sm" role="group">
+                                    <input type="radio" class="btn-check" name="transaction_type" id="income" value="income" {% if not transaction or transaction.transaction_type == 'income' %}checked{% endif %}>
+                                    <label class="btn btn-outline-success fw-bold py-2 text-uppercase fs-8" for="income">
+                                        <i class="bi bi-arrow-down-left-circle me-1"></i>Income Flow
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="transaction_type" id="expense" value="expense" {% if transaction.transaction_type == 'expense' %}checked{% endif %}>
+                                    <label class="btn btn-outline-danger fw-bold py-2 text-uppercase fs-8" for="expense">
+                                        <i class="bi bi-arrow-up-right-circle me-1"></i>Expense Outflow
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium">Cost Center / Allocation Department</label>
+                                <select name="department" class="form-select text-dark fw-semibold">
+                                    <option value="" class="text-muted fw-normal">Global Ledger Account / No Department</option>
+                                    {% for d in departments %}
+                                    <option value="{{ d.id }}" {% if transaction.department.id == d.id %}selected{% endif %}>{{ d.name|title }} Division</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="text-secondary fw-bold mb-3 small text-uppercase" style="letter-spacing: 0.5px;">Accounting Financial Metadata</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium">Statement Value Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white text-secondary font-monospace fw-bold">KES</span>
+                                    <input type="number" step="0.01" name="amount" class="form-control font-monospace text-end fw-bold text-dark fs-5" placeholder="0.00" value="{{ transaction.amount|default:'' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium">Auditable Reference Trace Identification</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-hash"></i></span>
+                                    <input type="text" name="reference_number" class="form-control font-monospace text-dark fw-semibold" placeholder="e.g. Receipt #, Cheque #, M-Pesa Code" value="{{ transaction.reference_number|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 border-top pt-3 mt-2">
+                            <label class="form-label text-secondary small fw-bold text-uppercase" style="letter-spacing: 0.5px;">Operational Audit Narrative / Description</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Provide a detailed operational description tracking the movement of these capital assets..." required>{{ transaction.description|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center border-top">
+                    <a href="{% url 'ledger_list' %}" class="btn btn-light fw-semibold text-muted border-0">
+                        <i class="bi bi-arrow-left me-1"></i>Cancel & Return
+                    </a>
+                    <button type="submit" class="btn btn-success fw-semibold px-5 shadow-sm">
+                        <i class="bi bi-check-circle-fill me-2"></i>Post Transaction
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .fs-8 { font-size: 0.72rem; letter-spacing: 0.5px; }
+    .btn-check:checked + .btn-outline-success { background-color: #198754 !important; color: #fff !important; }
+    .btn-check:checked + .btn-outline-danger { background-color: #dc3545 !important; color: #fff !important; }
+</style>
+{% endblock %}

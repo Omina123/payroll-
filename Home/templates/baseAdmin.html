@@ -1,0 +1,342 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll MMS | Enterprise ERP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root { 
+            --sidebar-width: 260px; 
+            --paper-bg: #f5f2eb;        
+            --card-bg: #fcfbfa;         
+            --ink-dark: #1e1a17;        
+            --ink-muted: #61564d;       
+            --gold-primary: #af8f4a;    
+            --gold-light: #dfd5be;      
+        }
+        
+        body { 
+            background-color: var(--paper-bg); 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath d='M1 3h1v1H1z' fill='%237a7165' fill-opacity='.03'/%3E%3C/svg%3E");
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+            overflow-x: hidden; 
+            color: var(--ink-dark);
+            margin: 0;
+        }
+
+        /* Fixed Sidebar Architecture with Independent Scrollability */
+        #sidebar { 
+            width: var(--sidebar-width); 
+            height: 100vh; 
+            position: fixed; 
+            left: 0; top: 0; 
+            background: var(--ink-dark); 
+            color: #ffffff; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 1050; 
+            display: flex; 
+            flex-direction: column; 
+            border-right: 2px solid var(--gold-primary);
+        }
+        
+        #sidebar .sidebar-scroll-container { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            scrollbar-width: none; 
+        }
+        #sidebar .sidebar-scroll-container::-webkit-scrollbar { 
+            display: none; 
+        }
+        
+        .sidebar-brand {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
+        }
+        .sidebar-brand h5 {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+            color: #fff;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .nav-group-header {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--gold-light);
+            opacity: 0.45;
+            padding: 20px 20px 6px;
+            font-weight: 700;
+        }
+        
+        /* Navigation Links Layout Correction */
+        .nav-link { 
+            color: rgba(255, 255, 255, 0.7); 
+            padding: 10px 20px; 
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease; 
+            border-left: 3px solid transparent; 
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        .nav-link .icon-box {
+            width: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-shrink: 0;
+        }
+        .nav-link i {
+            font-size: 1.05rem;
+            color: var(--gold-light);
+            opacity: 0.6;
+            transition: transform 0.2s ease;
+        }
+        .nav-link:hover { 
+            color: #ffffff; 
+            background: rgba(175, 143, 74, 0.08); 
+            border-left-color: var(--gold-primary);
+        }
+        .nav-link:hover i {
+            transform: translateX(2px);
+            opacity: 1;
+        }
+        .nav-link.active { 
+            color: #ffffff; 
+            background: rgba(175, 143, 74, 0.12); 
+            border-left-color: var(--gold-primary);
+            font-weight: 600;
+        }
+        .nav-link.active i {
+            opacity: 1;
+            color: var(--gold-primary);
+        }
+
+        /* Workspace & Top-Bar Engine */
+        #content { 
+            margin-left: var(--sidebar-width); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            min-height: 100vh; 
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .top-bar { 
+            background: var(--card-bg); 
+            padding: 15px 24px; 
+            border-bottom: 1px solid var(--gold-light);
+            box-shadow: 0 4px 10px rgba(44, 37, 32, 0.02);
+        }
+
+        /* Premium Ledger Styling Hooks for Sub-Context elements */
+        .ledger-card {
+            background: var(--card-bg);
+            border: 1px solid var(--gold-light);
+            border-top: 3px solid var(--gold-primary);
+            border-radius: 2px;
+            padding: 20px 24px;
+            box-shadow: 0 4px 12px rgba(44, 37, 32, 0.03);
+            height: 100%;
+        }
+        .ledger-card-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--ink-muted);
+            margin-bottom: 6px;
+        }
+        .ledger-card-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--ink-dark);
+            margin: 0;
+        }
+
+        /* Toast Style Notifications */
+        .message-container {
+            position: fixed; top: 25px; right: 25px; z-index: 2000;
+            min-width: 320px; max-width: 450px;
+        }
+        .custom-alert {
+            background: var(--card-bg) !important;
+            color: var(--ink-dark) !important;
+            border: 1px solid var(--gold-light) !important;
+            border-left: 4px solid var(--gold-primary) !important;
+            box-shadow: 0 15px 30px rgba(44, 37, 32, 0.1);
+            border-radius: 4px;
+        }
+
+        .logout-wrapper {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+        .btn-logout {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ff9999;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background: #c62828;
+            border-color: #c62828;
+            color: #ffffff;
+        }
+
+        @media (max-width: 992px) {
+            #sidebar { left: calc(var(--sidebar-width) * -1); }
+            #sidebar.show { left: 0; box-shadow: 15px 0 30px rgba(44, 37, 32, 0.15); }
+            #content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="message-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show custom-alert p-3 mb-2" role="alert">
+                    <div class="d-flex align-items-center">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                        {% else %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger me-3 fs-5"></i>
+                        {% endif %}
+                        <div class="small fw-semibold">{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close small" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-brand d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-shield-shaded me-2" style="color: var(--gold-primary) !important; font-size: 1.15rem;"></i>
+                <h5>PAYROLL MMS</h5>
+            </div>
+            <button class="btn btn-link text-white d-lg-none p-0 lh-1" onclick="toggleSidebar()"><i class="bi bi-x-lg fs-5"></i></button>
+        </div>
+        
+        <div class="sidebar-scroll-container">
+            <nav class="nav flex-column pb-3">
+                <a class="nav-link active mt-2" href="{% url 'admin_dashboard' %}">
+                    <span class="icon-box"><i class="bi bi-grid-1x2-fill"></i></span>Dashboard
+                </a>
+                
+                <div class="nav-group-header">Core Operations</div>
+                <a class="nav-link" href="{% url 'department_list' %}">
+                    <span class="icon-box"><i class="bi bi-diagram-3"></i></span>Departments
+                </a>
+                <a class="nav-link" href="{% url 'employee_list' %}">
+                    <span class="icon-box"><i class="bi bi-people"></i></span>Employees
+                </a>
+                <a class="nav-link" href="{% url 'attendance_sheet' %}">
+                    <span class="icon-box"><i class="bi bi-calendar-check"></i></span>Attendance Logs
+                </a>
+                
+                <div class="nav-group-header">Logistics & Services</div>
+                <a class="nav-link" href="{% url 'asset_list' %}">
+                    <span class="icon-box"><i class="bi bi-box-seam"></i></span>Asset Management
+                </a>
+                <a class="nav-link" href="{% url 'farming_list' %}">
+                    <span class="icon-box"><i class="bi bi-flower1"></i></span>Farming Operations
+                </a>
+                <a class="nav-link" href="{% url 'transport_log_list' %}">
+                    <span class="icon-box"><i class="bi bi-truck"></i></span>Logistics & Transport
+                </a>
+                <a class="nav-link" href="{% url 'maintenance_list' %}">
+                    <span class="icon-box"><i class="bi bi-wrench-adjustable"></i></span>System Services
+                </a>
+                
+                <div class="nav-group-header">Financial Records</div>
+                <a class="nav-link" href="{% url 'payroll_list' %}">
+                    <span class="icon-box"><i class="bi bi-wallet2"></i></span>Generate Payroll
+                </a>
+                {% comment %} <a class="nav-link" href="{% url 'expense_list' %}"> {% endcomment %}
+                    {% comment %} <span class="icon-box"><i class="bi bi-cash-coin"></i></span>Expenses Tracking {% endcomment %}
+                {% comment %} </a> {% endcomment %}
+                <a class="nav-link" href="{% url 'ledger_list' %}">
+                    <span class="icon-box"><i class="bi bi-journal-check"></i></span>General Ledger
+                </a>
+            </nav>
+        </div>
+        
+        <div class="logout-wrapper">
+            <a href="{% url 'logout' %}" class="btn btn-logout w-100 d-flex align-items-center justify-content-center">
+                <i class="bi bi-power me-2"></i> Terminate Session
+            </a>
+        </div>
+    </div>
+
+    <div id="content">
+        <div class="top-bar d-flex justify-content-between align-items-center">
+            <button class="btn btn-light border d-lg-none py-1 px-2" onclick="toggleSidebar()"><i class="bi bi-list fs-5"></i></button>
+            <div class="d-none d-md-flex align-items-center">
+                <span class="badge text-dark border me-2 font-monospace" style="background: var(--gold-light); border-color: var(--gold-primary) !important; font-size: 0.7rem;">Terminal Alpha</span>
+                <small class="fw-semibold" style="color: var(--ink-muted); font-size: 0.8rem;">Principal: {{ user.username }}</small>
+            </div>
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <div class="text-end d-none d-sm-block">
+                    <div class="fw-bold" style="color: var(--ink-dark); font-size: 0.85rem; line-height: 1.2;">{{ user.get_full_name|default:user.username }}</div>
+                    <div style="color: var(--gold-primary); font-size: 0.68rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Authorized Auditor</div>
+                </div>
+                <div class="rounded-circle d-flex align-items-center justify-content-center border" style="width: 36px; height: 36px; background: #fff; border-color: var(--gold-light) !important;">
+                    <i class="bi bi-person-badge fs-5" style="color: var(--ink-dark) !important;"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid p-4">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+        
+        setTimeout(function() {
+            let alerts = document.querySelectorAll('.custom-alert');
+            alerts.forEach(function(alert) {
+                let bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+
+        let idleTimer;
+        const terminalLifespan = 5 * 60 * 1000; 
+
+        function resetTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                window.location.href = "{% url 'logout' %}";
+            }, terminalLifespan);
+        }
+
+        window.onload = resetTimer;
+        window.onmousemove = resetTimer;
+        window.onmousedown = resetTimer; 
+        window.ontouchstart = resetTimer;
+        window.onclick = resetTimer;
+        window.onkeypress = resetTimer;
+    </script>
+</body>
+</html>

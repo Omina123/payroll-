@@ -1,0 +1,87 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Farming Activities & Projects</h2>
+            <p class="text-muted small mb-0">Manage enterprise agricultural investments, cycles, and margins</p>
+        </div>
+        <a href="{% url 'farming_create' %}" class="btn btn-success fw-semibold shadow-sm">
+            <i class="bi bi-plus-circle me-2"></i>Start New Project
+        </a>
+    </div>
+
+    <div class="row g-4">
+        {% for act in activities %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3 pb-0">
+                    <span class="badge {% if act.category == 'livestock' %}bg-primary-subtle text-primary{% else %}bg-info-subtle text-info-emphasis{% endif %} text-uppercase px-2 py-1 fs-8 fw-bold">
+                        {% if act.category == 'livestock' %}
+                            <i class="bi bi-egg-fill me-1"></i>
+                        {% else %}
+                            <i class="bi bi-tree-fill me-1"></i>
+                        {% endif %}
+                        {{ act.category }}
+                    </span>
+                    
+                    {% if act.is_closed %}
+                        <span class="badge bg-secondary-subtle text-secondary px-2 py-1 fs-8 fw-bold text-uppercase">Closed</span>
+                    {% else %}
+                        <span class="badge bg-success-subtle text-success px-2 py-1 fs-8 fw-bold text-uppercase">Active</span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    <h5 class="card-title fw-bold text-dark mb-1">{{ act.activity_name }}</h5>
+                    <p class="text-muted small mb-3 font-monospace">Commenced: {{ act.date_started|date:"d M Y" }}</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-2">
+                            <tr>
+                                <td class="text-muted ps-0 py-1 small">Total Operational Costs</td>
+                                <td class="text-end text-danger fw-semibold py-1 font-monospace">KES {{ act.total_costs|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted ps-0 py-1 small">Realized Sales Income</td>
+                                <td class="text-end text-success fw-semibold py-1 font-monospace">KES {{ act.sales_income|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <hr class="text-secondary opacity-25 my-2">
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-1">
+                        <span class="fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Net Margin</span>
+                        <span class="{% if act.net_margin >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold font-monospace fs-5">
+                            KES {{ act.net_margin|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light border-0 d-flex justify-content-end py-2.5 px-3">
+                    <a href="{% url 'farming_edit' act.pk %}" class="btn btn-sm btn-outline-dark fw-semibold px-3">
+                        <i class="bi bi-pencil-square me-1"></i>Manage
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm text-center py-5">
+                <div class="card-body py-4">
+                    <i class="bi bi-clipboard-x text-muted display-4 mb-3"></i>
+                    <h5 class="fw-bold text-secondary">No Core Infrastructure Logged</h5>
+                    <p class="text-muted small mb-0">There are currently no records inside the agricultural module context ledger.</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .fs-8 { font-size: 0.72rem; letter-spacing: 0.5px; }
+</style>
+{% endblock %}

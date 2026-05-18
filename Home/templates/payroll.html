@@ -1,0 +1,449 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="container-fluid px-2">
+    
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold m-0" style="font-size: 1.6rem; color: var(--ink-dark); letter-spacing: -0.5px;">Payroll Management Ledger</h3>
+            <p class="small m-0 mt-1" style="color: var(--ink-muted);">Adjust individual allowances, deductions, and allocation descriptions live before committing batch updates.</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn border d-flex align-items-center fw-semibold text-dark py-2 px-3 transition-all" 
+                    style="background: #fff; border-color: var(--gold-light) !important; font-size: 0.85rem;" 
+                    onclick="downloadFullPayrollPDF()">
+                <i class="bi bi-file-earmark-pdf-fill me-2" style="color: #dc2626;"></i> Download Full Payroll PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 8px; border: 1px solid rgba(175, 143, 74, 0.15) !important;">
+        <div class="px-4 py-3 border-bottom d-flex align-items-center" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.01);">
+            <h6 class="m-0 fw-bold text-uppercase font-monospace" style="color: var(--ink-dark); font-size: 0.8rem; letter-spacing: 0.5px;">
+                <i class="bi bi-sliders me-2" style="color: var(--gold-primary);"></i> Generation & Filtering Controls
+            </h6>
+        </div>
+        <div class="card-body p-4" style="background: var(--paper-bg, #fcfbf7);">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold font-monospace mb-2" style="color: var(--ink-muted); font-size: 0.72rem;">TARGET MONTH</label>
+                    <select id="batchMonth" class="form-select shadow-none border font-sans py-2" style="border-color: var(--gold-light) !important; font-size: 0.88rem; color: var(--ink-dark);">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold font-monospace mb-2" style="color: var(--ink-muted); font-size: 0.72rem;">TARGET YEAR</label>
+                    <select id="batchYear" class="form-select shadow-none border font-sans py-2" style="border-color: var(--gold-light) !important; font-size: 0.88rem; color: var(--ink-dark);">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold font-monospace mb-2" style="color: var(--ink-muted); font-size: 0.72rem;">INITIAL PAYMENT STATUS</label>
+                    <select id="batchStatus" class="form-select shadow-none border font-sans py-2" style="border-color: var(--gold-light) !important; font-size: 0.88rem; color: var(--ink-dark);">
+                        <option value="pending" selected>Pending</option>
+                        <option value="paid">Paid</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="button" id="btnProcessBatch" class="btn d-flex align-items-center justify-content-center fw-semibold text-white transition-all py-2 w-100" style="background: var(--ink-dark); border: 1px solid var(--gold-primary); font-size: 0.85rem;">
+                        <i class="bi bi-plus-circle-fill me-2" style="color: var(--gold-primary);"></i> Process Batch
+                    </button>
+                    <button type="button" class="btn border d-flex align-items-center justify-content-center fw-semibold text-dark py-2 w-100 transition-all" style="background: #fff; border-color: rgba(0,0,0,0.15) !important; font-size: 0.85rem;" onclick="applyFilters()">
+                        <i class="bi bi-funnel me-2" style="color: var(--ink-muted);"></i> Filter View
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ledger-card p-0 overflow-hidden" style="border-radius: 8px; border: 1px solid rgba(175, 143, 74, 0.15) !important; background: #fff;">
+        <div class="table-responsive">
+            <table class="table align-middle m-0 table-borderless" id="payrollTable">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--gold-light); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-muted); background: rgba(0,0,0,0.01);">
+                        <th class="ps-4 py-3" style="width: 20%;">Employee</th>
+                        <th class="py-3" style="width: 12%;">Basic (KES)</th>
+                        <th class="py-3" style="width: 14%;">Allowances (KES)</th>
+                        <th class="py-3" style="width: 14%;">Deductions (KES)</th>
+                        <th class="py-3" style="width: 18%;">Deduction Description</th>
+                        <th class="py-3" style="width: 12%;">Net Pay</th>
+                        <th class="py-3" style="width: 10%;">Status</th>
+                        <th class="pe-4 py-3 text-end" style="width: 10%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="payrollBody" style="font-size: 0.88rem;">
+                    {% for p in payslips %}
+                    <tr class="payroll-row" data-employee-id="{{ p.employee.id }}" style="border-bottom: 1px solid rgba(175, 143, 74, 0.15);">
+                        <td class="ps-4 py-3">
+                            <div class="fw-bold emp-name" style="color: var(--ink-dark);">{{ p.employee.first_name }} {{ p.employee.last_name }}</div>
+                            <small class="pay-period font-monospace" style="color: var(--ink-muted); font-size: 0.75rem;">{{ p.month_year|date:"F Y" }}</small>
+                        </td>
+                        <td class="py-3">
+                            <span class="fw-semibold text-dark font-monospace raw-basic" data-value="{{ p.employee.basic_salary }}">
+                                KES {{ p.employee.basic_salary|floatformat:2 }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            <input type="number" step="0.01" class="form-control form-control-sm text-success fw-bold font-monospace input-allowance shadow-none" 
+                                   style="font-size: 0.85rem; border-color: rgba(175, 143, 74, 0.2) !important; background: transparent;"
+                                   value="{{ p.allowances|default:'0.00' }}">
+                        </td>
+                        <td class="py-3">
+                            <input type="number" step="0.01" class="form-control form-control-sm text-danger fw-bold font-monospace input-deduction shadow-none" 
+                                   style="font-size: 0.85rem; border-color: rgba(175, 143, 74, 0.2) !important; background: transparent;"
+                                   value="{{ p.deductions|default:'0.00' }}">
+                        </td>
+                        <td class="py-3">
+                            <input type="text" class="form-control form-control-sm text-muted input-description shadow-none" 
+                                   placeholder="Absenteeism, Sacco shares..." style="font-size: 0.82rem; border-color: rgba(175, 143, 74, 0.2) !important; background: transparent;"
+                                   value="{{ p.description|default:'' }}">
+                        </td>
+                        <td class="py-3">
+                            <span class="fw-bold font-monospace display-net text-primary">KES {{ p.net_pay|floatformat:2 }}</span>
+                        </td>
+                        <td class="py-3">
+                            {% if p.status == 'paid' %}
+                            <span class="badge font-monospace text-success border py-1 px-2 text-status text-uppercase" style="background: rgba(22, 163, 74, 0.08); border-color: rgba(22, 163, 74, 0.3) !important; font-size: 0.72rem;">PAID</span>
+                            {% else %}
+                            <span class="badge font-monospace text-warning border py-1 px-2 text-status text-uppercase" style="background: rgba(217, 119, 6, 0.08); border-color: rgba(217, 119, 6, 0.3) !important; font-size: 0.72rem;">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 py-3 text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{% url 'payslip_detail' p.pk %}" class="btn btn-sm border bg-white text-dark py-1 px-2 shadow-none" style="border-color: var(--gold-light) !important; font-size: 0.78rem;">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm border bg-white text-danger py-1 px-2 shadow-none" style="border-color: var(--gold-light) !important; font-size: 0.78rem;"
+                                        onclick="downloadPayslipDirectly('{{ p.employee.first_name }} {{ p.employee.last_name }}', '{{ p.month_year|date:'F Y' }}', '{{ p.employee.basic_salary }}', this)">
+                                    <i class="bi bi-download me-1"></i> PDF
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted small">
+                            <i class="bi bi-file-earmark-break d-block fs-3 mb-2" style="color: var(--gold-light);"></i>
+                            No active payroll entries exist for this month view. Click <strong>"Process Batch"</strong> to load active members.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if payslips %}
+        <div class="border-top px-4 py-3 text-end" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.01);">
+            <button type="button" id="btnSaveConfiguration" class="btn d-inline-flex align-items-center fw-semibold text-white transition-all py-2 px-4" style="background: var(--ink-dark); border: 1px solid var(--gold-primary); font-size: 0.85rem;">
+                <i class="bi bi-check-circle-fill me-2" style="color: var(--gold-primary);"></i> Save Payroll Configuration
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function applyFilters() {
+    const month = document.getElementById('batchMonth').value;
+    const year = document.getElementById('batchYear').value;
+    window.location.href = `?month=${month}&year=${year}`;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const rows = document.querySelectorAll(".payroll-row");
+
+    // Live Inline Net Pay Calculation Engine
+    rows.forEach(row => {
+        const basicSalary = parseFloat(row.querySelector(".raw-basic").getAttribute("data-value")) || 0;
+        const allowanceInput = row.querySelector(".input-allowance");
+        const deductionInput = row.querySelector(".input-deduction");
+        const netDisplay = row.querySelector(".display-net");
+
+        function recalculateRowNetPay() {
+            const allowances = parseFloat(allowanceInput.value) || 0;
+            const deductions = parseFloat(deductionInput.value) || 0;
+            const computedNet = (basicSalary + allowances) - deductions;
+            
+            netDisplay.textContent = "KES " + computedNet.toLocaleString('en-US', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            });
+        }
+
+        allowanceInput.addEventListener("input", recalculateRowNetPay);
+        deductionInput.addEventListener("input", recalculateRowNetPay);
+    });
+
+    // Action A: Process Batch Button (Generates Missing Employees)
+    const btnProcess = document.getElementById("btnProcessBatch");
+    if (btnProcess) {
+        btnProcess.addEventListener("click", function() {
+            const payload = {
+                month: document.getElementById("batchMonth").value,
+                year: document.getElementById("batchYear").value,
+                generate_missing: true
+            };
+
+            fetch(window.location.href, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert(data.message);
+                    applyFilters(); 
+                } else {
+                    alert("Execution Failure: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error connecting to payroll generation subsystem pipeline.");
+            });
+        });
+    }
+
+    // Action B: Save Configuration Button (Submits current table modifications)
+    const btnSave = document.getElementById("btnSaveConfiguration");
+    if (btnSave) {
+        btnSave.addEventListener("click", function() {
+            const payload = {
+                month: document.getElementById("batchMonth").value,
+                year: document.getElementById("batchYear").value,
+                status: document.getElementById("batchStatus").value,
+                slips: []
+            };
+
+            rows.forEach(row => {
+                payload.slips.push({
+                    employee_id: row.getAttribute("data-employee-id"),
+                    allowances: row.querySelector(".input-allowance").value || "0.00",
+                    deductions: row.querySelector(".input-deduction").value || "0.00",
+                    description: row.querySelector(".input-description").value || ""
+                });
+            });
+
+            fetch(window.location.href, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert("Update Failure: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Transmission Error:", error);
+                alert("Critical transmission layout error mapping back to server engines.");
+            });
+        });
+    }
+});
+
+// Helper configurations for html2pdf renderer
+const pdfConfigOptions = {
+    margin: [15, 15],
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+};
+
+// Full Dynamic Automated Payroll Ledger File Compiler
+function downloadFullPayrollPDF() {
+    const rows = document.querySelectorAll(".payroll-row");
+    if (rows.length === 0) {
+        alert("No visible payroll rows found to compile.");
+        return;
+    }
+
+    const monthSel = document.getElementById("batchMonth");
+    const monthName = monthSel.options[monthSel.selectedIndex].text;
+    const yearName = document.getElementById("batchYear").value;
+
+    // Create a temporary off-screen container for rendering processing pipeline
+    const workerElement = document.createElement("div");
+    workerElement.style.padding = "20px";
+    workerElement.style.background = "#ffffff";
+    workerElement.style.fontFamily = "'Helvetica Neue', Arial, sans-serif";
+
+    let payslipsHtml = "";
+
+    rows.forEach((row, index) => {
+        const name = row.querySelector(".emp-name").textContent.trim();
+        const period = row.querySelector(".pay-period").textContent.trim();
+        const basic = parseFloat(row.querySelector(".raw-basic").getAttribute("data-value")) || 0;
+        const allowance = parseFloat(row.querySelector(".input-allowance").value) || 0;
+        const deduction = parseFloat(row.querySelector(".input-deduction").value) || 0;
+        const desc = row.querySelector(".input-description").value.trim() || "General Deductions";
+        const status = row.querySelector(".text-status").textContent.trim().toUpperCase();
+        const net = (basic + allowance) - deduction;
+
+        payslipsHtml += `
+            <div style="page-break-inside: avoid; margin-bottom: 40px; color: #1e293b;">
+                <div style="margin-bottom: 15px;">
+                    <div style="float: left;">
+                        <h2 style="margin: 0; color: #0f172a; font-weight: bold; font-size: 20px; letter-spacing: -0.5px;">ENTERPRISE SYSTEM</h2>
+                        <span style="color: #64748b; font-size: 11px;">Official Remuneration Statement</span>
+                    </div>
+                    <div style="float: right; margin-top: 5px;">
+                        <span style="padding: 5px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; border: 1px solid ${status === 'PAID' ? '#bbf7d0' : '#fef08a'}; background: ${status === 'PAID' ? '#dcfce7' : '#fef9c3'}; color: ${status === 'PAID' ? '#15803d' : '#a16207'}; text-transform: uppercase;">${status}</span>
+                    </div>
+                    <div style="clear: both;"></div>
+                </div>
+
+                <div style="border-top: 2px dashed #cbd5e1; margin: 15px 0;"></div>
+
+                <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 50%; padding: 0;">
+                            <div style="text-transform: uppercase; font-size: 9px; color: #64748b; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 2px;">Employee Name</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${name}</div>
+                        </td>
+                        <td style="width: 50%; text-align: right; padding: 0;">
+                            <div style="text-transform: uppercase; font-size: 9px; color: #64748b; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 2px;">Statement Period</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${period}</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th style="background-color: #f8fafc; color: #334155; font-size: 10px; text-transform: uppercase; font-weight: bold; padding: 8px 10px; text-align: left; border: 1px solid #e2e8f0;">Description Component</th>
+                            <th style="background-color: #f8fafc; color: #334155; font-size: 10px; text-transform: uppercase; font-weight: bold; padding: 8px 10px; text-align: right; width: 180px; border: 1px solid #e2e8f0;">Amount Allocation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; font-size: 12px; border: 1px solid #e2e8f0;">Basic Salary Earning Balance</td>
+                            <td style="padding: 10px; font-size: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: 600;">KES ${basic.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; font-size: 12px; border: 1px solid #e2e8f0; color: #16a34a;">Additional Allowances / Bonuses</td>
+                            <td style="padding: 10px; font-size: 12px; border: 1px solid #e2e8f0; text-align: right; color: #16a34a; font-weight: 600;">+ KES ${allowance.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; font-size: 12px; border: 1px solid #e2e8f0; color: #dc2626;">Deductions Breakdown <small style="color: #64748b; font-family: monospace; display: block; margin-top: 1px;">(${desc})</small></td>
+                            <td style="padding: 10px; font-size: 12px; border: 1px solid #e2e8f0; text-align: right; color: #dc2626; font-weight: 600;">- KES ${deduction.toFixed(2)}</td>
+                        </tr>
+                        <tr style="background-color: #0f172a !important; color: #ffffff !important; font-weight: bold;">
+                            <td style="padding: 12px 10px; font-size: 12px; border: 1px solid #0f172a; color: #ffffff !important;">NET TAKE-HOME PAY</td>
+                            <td style="padding: 12px 10px; font-size: 14px; border: 1px solid #0f172a; text-align: right; color: #ffffff !important;">KES ${net.toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            ${index < rows.length - 1 ? '<div style="page-break-before: always;"></div>' : ''}
+        `;
+    });
+
+    workerElement.innerHTML = payslipsHtml;
+    
+    // Execute html2pdf delivery process pipeline
+    html2pdf()
+        .set({ ...pdfConfigOptions, filename: `Payroll_Summary_${monthName}_${yearName}.pdf` })
+        .from(workerElement)
+        .save();
+}
+
+// Individual Context Document Compiler
+function downloadPayslipDirectly(name, period, basic, element) {
+    const row = element.closest('tr');
+    const allowance = row.querySelector('.input-allowance').value || '0.00';
+    const deduction = row.querySelector('.input-deduction').value || '0.00';
+    const desc = row.querySelector('.input-description').value || 'N/A';
+    
+    const basicNum = parseFloat(basic) || 0;
+    const allowNum = parseFloat(allowance) || 0;
+    const dedNum = parseFloat(deduction) || 0;
+    const netNum = (basicNum + allowNum) - dedNum;
+
+    const workerElement = document.createElement("div");
+    workerElement.style.padding = "25px";
+    workerElement.style.background = "#ffffff";
+    workerElement.style.fontFamily = "'Helvetica Neue', Arial, sans-serif";
+
+    workerElement.innerHTML = `
+        <div style="border: 2px solid #e2e8f0; padding: 30px; border-radius: 8px; color: #1e293b;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td>
+                        <h2 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: bold;">ENTERPRISE SYSTEM</h2>
+                        <span style="color: #64748b; font-size: 11px;">Official Employee Remuneration Slip</span>
+                    </td>
+                    <td style="text-align: right; vertical-align: top;">
+                        <span style="padding: 6px 14px; font-size: 10px; font-weight: bold; border-radius: 4px; background: #0f172a; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">STATEMENT SLIP</span>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="border-top: 2px dashed #e2e8f0; margin: 20px 0;"></div>
+            
+            <table style="width: 100%; margin-bottom: 25px; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 50%; padding: 0;">
+                        <div style="text-transform: uppercase; font-size: 9px; color: #64748b; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 2px;">Employee Name</div>
+                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">${name}</div>
+                    </td>
+                    <td style="width: 50%; text-align: right; padding: 0;">
+                        <div style="text-transform: uppercase; font-size: 9px; color: #64748b; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 2px;">Statement Period</div>
+                        <div style="font-size: 15px; font-weight: 600; color: #1e293b;">${period}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="background-color: #f1f5f9; color: #334155; font-size: 10px; text-transform: uppercase; padding: 10px; text-align: left; border: 1px solid #e2e8f0;">Description Item Breakdown</th>
+                        <th style="background-color: #f1f5f9; color: #334155; font-size: 10px; text-transform: uppercase; padding: 10px; text-align: right; width: 200px; border: 1px solid #e2e8f0;">Amount Allocation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 12px 10px; font-size: 13px; border: 1px solid #e2e8f0;">Basic Base Earnings</td>
+                        <td style="padding: 12px 10px; font-size: 13px; border: 1px solid #e2e8f0; text-align: right; font-weight: 600;">KES ${basicNum.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 10px; font-size: 13px; border: 1px solid #e2e8f0; color: #16a34a;">Allowances & Bonuses</td>
+                        <td style="padding: 12px 10px; font-size: 13px; border: 1px solid #e2e8f0; text-align: right; color: #16a34a; font-weight: 600;">+ KES ${allowNum.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 10px; font-size: 13px; border: 1px solid #e2e8f0; color: #dc2626;">Statutory Deductions <small style="color: #64748b; display: block; margin-top: 2px;">(${desc})</small></td>
+                        <td style="padding: 12px 10px; font-size: 13px; border: 1px solid #e2e8f0; text-align: right; color: #dc2626; font-weight: 600;">- KES ${dedNum.toFixed(2)}</td>
+                    </tr>
+                    <tr style="background-color: #0f172a; color: #fff; font-weight: bold;">
+                        <td style="padding: 14px 10px; color: #fff; border: 1px solid #0f172a;">Net Take-Home Pay</td>
+                        <td style="padding: 14px 10px; color: #fff; border: 1px solid #0f172a; text-align: right; font-size: 15px;">KES ${netNum.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    html2pdf()
+        .set({ ...pdfConfigOptions, filename: `Payslip_${name.replace(/\s+/g, '_')}.pdf` })
+        .from(workerElement)
+        .save();
+}
+</script>
+{% endblock %}

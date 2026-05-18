@@ -1,0 +1,268 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-5">
+            <h2 class="fw-bold text-dark mb-1">General Ledger</h2>
+            <p class="text-muted small mb-0">Monitor master cash flows, tracking total income, expenses, and net position balance entries.</p>
+        </div>
+        <div class="col-md-7 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
+            <div class="position-relative shadow-sm rounded" style="min-width: 240px;">
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                <input type="text" id="ledgerSearchInput" class="form-control ps-5 bg-white border-1 py-2" placeholder="Search reference, description...">
+            </div>
+            
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle fw-semibold px-3 py-2 shadow-sm" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-download me-2"></i>Export Ledger
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="exportDropdown">
+                    <li>
+                        <a class="dropdown-item py-2" href="{% url 'ledger_export_pdf' %}">
+                            <i class="bi bi-file-earmark-pdf text-danger me-2"></i>Download PDF Document
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2" href="{% url 'ledger_export_word' %}">
+                            <i class="bi bi-file-earmark-word text-primary me-2"></i>Download Word (.docx)
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <a href="{% url 'ledger_create' %}" class="btn btn-primary fw-semibold px-4 shadow-sm py-2">
+                <i class="bi bi-plus-lg me-2"></i>New Transaction
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-start border-success border-4 h-100">
+                <div class="card-body p-4 bg-white rounded-end">
+                    <small class="text-uppercase fw-bold text-secondary small d-block mb-1" style="letter-spacing: 0.5px;">Total Realized Income</small>
+                    <h3 class="fw-bold mb-0 text-dark font-monospace">KES <span id="statIncome">{{ total_income|floatformat:2 }}</span></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-start border-danger border-4 h-100">
+                <div class="card-body p-4 bg-white rounded-end">
+                    <small class="text-uppercase fw-bold text-secondary small d-block mb-1" style="letter-spacing: 0.5px;">Total Operational Expense</small>
+                    <h3 class="fw-bold mb-0 text-dark font-monospace">KES <span id="statExpense">{{ total_expense|floatformat:2 }}</span></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div id="netPositionCard" class="card border-0 shadow-sm border-start border-dark border-4 h-100">
+                <div class="card-body p-4 bg-white rounded-end">
+                    <small class="text-uppercase fw-bold text-secondary small d-block mb-1" style="letter-spacing: 0.5px;">Net Asset Position</small>
+                    <h3 class="fw-bold mb-0 text-dark font-monospace">KES <span id="statNet">{{ net_balance|floatformat:2 }}</span></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <ul class="nav nav-pills dynamic-ledger-tabs" id="ledgerTabs">
+            <li class="nav-item">
+                <button class="nav-link active px-4 py-2 small fw-semibold" data-filter="all">All Transactions</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link px-4 py-2 small fw-semibold text-success" data-filter="income">
+                    <i class="bi bi-arrow-down-left-circle me-1"></i>Incomes
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link px-4 py-2 small fw-semibold text-danger" data-filter="expense">
+                    <i class="bi bi-arrow-up-right-circle me-1"></i>Expenses
+                </button>
+            </li>
+        </ul>
+        <small class="text-muted fw-medium font-monospace bg-light px-3 py-1.5 rounded border"><span id="visibleCount" class="fw-bold text-dark">{{ transactions|length }}</span> transactions active</small>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="ledgerTable">
+                    <thead class="table-light text-secondary border-bottom">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase fs-7 fw-bold" style="width: 15%;">Timestamp</th>
+                            <th class="py-3 text-uppercase fs-7 fw-bold" style="width: 12%;">Type</th>
+                            <th class="py-3 text-uppercase fs-7 fw-bold" style="width: 15%;">Reference</th>
+                            <th class="py-3 text-uppercase fs-7 fw-bold" style="width: 15%;">Department</th>
+                            <th class="py-3 text-uppercase fs-7 fw-bold" style="width: 15%;">Recorded By</th>
+                            <th class="py-3 text-uppercase fs-7 fw-bold" style="width: 15%;">Description</th>
+                            <th class="text-end pe-4 py-3 text-uppercase fs-7 fw-bold" style="width: 13%;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr class="ledger-row" data-type="{{ tx.transaction_type }}" data-amount="{{ tx.amount }}">
+                            <td class="ps-4 text-secondary">
+                                <span class="d-block fw-semibold text-dark">{{ tx.timestamp|date:"d M Y" }}</span>
+                                <span class="small font-monospace text-muted opacity-75">{{ tx.timestamp|time:"H:i" }}</span>
+                            </td>
+                            <td>
+                                {% if tx.transaction_type == 'income' %}
+                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 text-uppercase px-2.5 py-1.5 fs-8 fw-bold tracking-badge">INCOME</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 text-uppercase px-2.5 py-1.5 fs-8 fw-bold tracking-badge">EXPENSE</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="text-dark fw-bold bg-light px-2 py-1 rounded small border font-monospace">{{ tx.reference_number|default:"---" }}</code>
+                            </td>
+                            <td>
+                                <span class="text-dark fw-semibold text-capitalize">{{ tx.department.name|default:"General Operations" }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-circle text-secondary me-2 opacity-50"></i>
+                                    <span class="small text-dark fw-medium">{{ tx.created_by.username|default:"System Engine" }}</span>
+                                </div>
+                            </td>
+                            <td class="text-muted small text-truncate target-desc" style="max-width: 220px;" title="{{ tx.description }}">
+                                {{ tx.description|default:"---" }}
+                            </td>
+                            <td class="text-end pe-4 fw-bold font-monospace {% if tx.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %} fs-6">
+                                {% if tx.transaction_type == 'income' %}+{% else %}-{% endif %}{{ tx.amount|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="emptyRow">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-4 d-block mb-3 opacity-25 text-secondary"></i>
+                                <h6 class="fw-bold text-secondary">No Core Accounting Transactions Logged</h6>
+                                <p class="small text-muted mb-0">There are currently no active transactions matching your ledger configuration models.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr id="jsNoResultsRow" style="display: none;">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-search display-4 d-block mb-3 opacity-25 text-secondary"></i>
+                                <h6 class="fw-bold text-secondary">No Matching Ledger Subsets</h6>
+                                <p class="small text-muted mb-0">No records inside the operational registry parameters map your search filters.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fs-7 { font-size: 0.75rem; letter-spacing: 0.5px; }
+    .fs-8 { font-size: 0.72rem; letter-spacing: 0.5px; }
+    .tracking-badge { min-width: 80px; text-align: center; display: inline-block; }
+    .table-hover tbody tr.ledger-row { cursor: pointer; transition: background-color 0.15s ease; }
+    .table-hover tbody tr.ledger-row:hover { background-color: rgba(0, 0, 0, 0.015) !important; }
+    .table-active-highlight { background-color: rgba(33, 37, 41, 0.02) !important; border-left: 4px solid #212529 !important; }
+    .nav-pills .nav-link { color: #6c757d; border: 1px solid #dee2e6; background: #fff; margin-right: 6px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.02); transition: all 0.2s ease; }
+    .nav-pills .nav-link.active { background-color: #212529 !important; color: #fff !important; border-color: #212529; }
+    .nav-pills .nav-link[data-filter="income"].active { background-color: #198754 !important; border-color: #198754; }
+    .nav-pills .nav-link[data-filter="expense"].active { background-color: #dc3545 !important; border-color: #dc3545; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("ledgerSearchInput");
+    const rows = document.querySelectorAll(".ledger-row");
+    const tabButtons = document.querySelectorAll("#ledgerTabs button");
+    const visibleCountDisplay = document.getElementById("visibleCount");
+    const jsNoResultsRow = document.getElementById("jsNoResultsRow");
+    
+    const statIncome = document.getElementById("statIncome");
+    const statExpense = document.getElementById("statExpense");
+    const statNet = document.getElementById("statNet");
+    const netPositionCard = document.getElementById("netPositionCard");
+
+    let activeTypeFilter = "all";
+    let activeSearchQuery = "";
+
+    function updateNetCardIndicator(netValue) {
+        if (!netPositionCard) return;
+        netPositionCard.className = "card border-0 shadow-sm border-4 h-100";
+        if (netValue > 0) {
+            netPositionCard.classList.add("border-start", "border-success");
+        } else if (netValue < 0) {
+            netPositionCard.classList.add("border-start", "border-danger");
+        } else {
+            netPositionCard.classList.add("border-start", "border-dark");
+        }
+    }
+
+    function filterLedgerTable() {
+        let visibleCount = 0;
+        let visibleIncome = 0;
+        let visibleExpense = 0;
+
+        rows.forEach(row => {
+            const rowType = row.getAttribute("data-type");
+            const rowAmount = parseFloat(row.getAttribute("data-amount")) || 0;
+            const rowText = row.textContent.toLowerCase();
+
+            const matchesTab = (activeTypeFilter === "all" || rowType === activeTypeFilter);
+            const matchesSearch = rowText.includes(activeSearchQuery);
+
+            if (matchesTab && matchesSearch) {
+                row.style.display = "";
+                visibleCount++;
+                
+                if (rowType === "income") {
+                    visibleIncome += rowAmount;
+                } else if (rowType === "expense") {
+                    visibleExpense += rowAmount;
+                }
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        visibleCountDisplay.textContent = visibleCount;
+        statIncome.textContent = visibleIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        statExpense.textContent = visibleExpense.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const netValue = visibleIncome - visibleExpense;
+        statNet.textContent = netValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        updateNetCardIndicator(netValue);
+
+        if (visibleCount === 0 && rows.length > 0) {
+            jsNoResultsRow.style.display = "";
+        } else {
+            jsNoResultsRow.style.display = "none";
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function (e) {
+            activeSearchQuery = e.target.value.toLowerCase().trim();
+            filterLedgerTable();
+        });
+    }
+
+    tabButtons.forEach(button => {
+        button.addEventListener("click", function () {
+            tabButtons.forEach(btn => btn.classList.remove("active"));
+            this.classList.add("active");
+
+            activeTypeFilter = this.getAttribute("data-filter");
+            filterLedgerTable();
+        });
+    });
+
+    rows.forEach(row => {
+        row.addEventListener("click", function () {
+            rows.forEach(r => r.classList.remove("table-active-highlight"));
+            this.classList.add("table-active-highlight");
+        });
+    });
+
+    const initialNet = parseFloat(statNet.textContent.replace(/,/g, '')) || 0;
+    updateNetCardIndicator(initialNet);
+});
+</script>
+{% endblock %}

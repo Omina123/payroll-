@@ -1,0 +1,79 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Record New Trip / Fuel Log</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="row">
+                            <!-- Section 1: Asset & General -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Vehicle / Asset</label>
+                                    <select name="asset" class="form-select" required>
+                                        <option value="">-- Select Vehicle --</option>
+                                        {% for asset in assets %}
+                                        <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.reg_number }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Trip Date</label>
+                                        <input type="date" name="date" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Current Mileage</label>
+                                        <input type="number" name="mileage_reading" class="form-control" placeholder="Odometer reading" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Driver Name</label>
+                                    <input type="text" name="driver_name" class="form-control" placeholder="Who was driving?">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Destination</label>
+                                    <input type="text" name="destination" class="form-control" placeholder="Where to?">
+                                </div>
+                            </div>
+
+                            <!-- Section 2: Costs -->
+                            <div class="col-md-6 border-start ps-md-4">
+                                <h6 class="text-muted small fw-bold text-uppercase mb-3">Expense Breakdown</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Fuel Cost (KES)</label>
+                                    <input type="number" step="0.01" name="fuel_cost" class="form-control" value="0.00">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Loading / Offloading Fees</label>
+                                    <input type="number" step="0.01" name="loading_fees" class="form-control" value="0.00">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Unforeseen Expenses</label>
+                                    <input type="number" step="0.01" name="unforeseen_expenses" class="form-control" value="0.00">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description / Notes</label>
+                                    <textarea name="description" class="form-control" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'transport_log_list' %}" class="btn btn-light">Back</a>
+                            <button type="submit" class="btn btn-success px-5">Save Trip Log</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

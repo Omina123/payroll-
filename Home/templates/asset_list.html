@@ -1,0 +1,80 @@
+{% extends 'baseAdmin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold">Fixed Assets Registry</h3>
+        <a href="{% url 'asset_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>Register New Asset
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="q" class="form-control" placeholder="Search by name or Reg No..." value="{{ request.GET.q }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for code, label in status_choices %}
+                        <option value="{{ code }}" {% if request.GET.status == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-secondary w-100">Filter Assets</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Asset Name</th>
+                        <th>Reg Number</th>
+                        <th>Department</th>
+                        <th>Value (KES)</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ asset.name }}</div>
+                            <small class="text-muted">Purchased: {{ asset.purchase_date }}</small>
+                        </td>
+                        <td><code>{{ asset.reg_number }}</code></td>
+                        <td>{{ asset.department.name }}</td>
+                        <td>{{ asset.purchase_value }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if asset.status == 'active' %}bg-success
+                                {% elif asset.status == 'maintenance' %}bg-warning text-dark
+                                {% else %}bg-danger{% endif %}">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-5">No assets found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

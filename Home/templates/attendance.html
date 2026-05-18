@@ -1,0 +1,151 @@
+{% extends 'baseAdmin.html' %}
+{% load attendance_extras %}
+
+{% block content %}
+<div class="container-fluid px-2">
+    
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold m-0" style="font-size: 1.6rem; color: var(--ink-dark); letter-spacing: -0.5px;">Daily Attendance Registry</h3>
+            <p class="small m-0 mt-1" style="color: var(--ink-muted);">Mark daily workforce roll call, track operational shift logs, and export ledger sheets.</p>
+        </div>
+        
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="{% url 'download_attendance' %}?date={{ date_selected }}" class="btn border d-flex align-items-center fw-semibold text-dark py-2 px-3 transition-all" style="background: #fff; border-color: var(--gold-light) !important; font-size: 0.85rem;">
+                <i class="bi bi-file-earmark-spreadsheet-fill me-2" style="color: #1f7244;"></i> Export Sheet (.CSV)
+            </a>
+            
+            <input type="date" id="attendanceDate" class="form-control text-center shadow-none border font-monospace py-2" style="width: 160px; border-color: var(--gold-light) !important; font-size: 0.88rem; color: var(--ink-dark);" value="{{ date_selected }}">
+            
+            <button onclick="saveAll()" class="btn d-flex align-items-center fw-semibold text-white transition-all py-2 px-4" style="background: var(--ink-dark); border: 1px solid var(--gold-primary); font-size: 0.85rem;">
+                <i class="bi bi-cloud-arrow-up-fill me-2" style="color: var(--gold-primary);"></i> Save Operations
+            </button>
+        </div>
+    </div>
+
+    <div class="ledger-card p-0 overflow-hidden">
+        <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.01);">
+            <h6 class="m-0 fw-bold d-flex align-items-center" style="color: var(--ink-dark); font-size: 0.9rem; letter-spacing: 0.3px;">
+                <i class="bi bi-calendar-check me-2" style="color: var(--gold-primary);"></i> Workforce Presence Ledger: <span class="font-monospace ms-2 text-primary">{{ date_selected }}</span>
+            </h6>
+            <span class="badge font-monospace text-dark py-1 px-2 border" style="background: var(--paper-bg); border-color: var(--gold-light) !important; font-size: 0.65rem;">Live Context Roster</span>
+        </div>
+
+        <div class="p-2">
+            <div class="table-responsive">
+                <table class="table align-middle m-0 table-borderless">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--gold-light); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-muted);">
+                            <th class="ps-3 py-2">Employee Name</th>
+                            <th class="py-2">Department Assignation</th>
+                            <th class="py-2 text-center" style="width: 200px;">Status Flag</th>
+                            <th class="pe-3 py-2">Operational Shift Remarks / Log Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceBody" style="font-size: 0.88rem;">
+                        {% for emp in employees %}
+                        {% with attendance_record=attendance_dict|get_item:emp.id %}
+                        <tr data-emp-id="{{ emp.id }}" style="border-bottom: 1px solid rgba(175, 143, 74, 0.15);">
+                            <td class="ps-3 py-3 fw-bold" style="color: var(--ink-dark);">
+                                {{ emp.first_name }} {{ emp.last_name }}
+                            </td>
+                            <td class="py-3">
+                                <span class="badge border py-1 px-2 font-monospace text-dark" style="background: var(--paper-bg); border-color: var(--gold-light) !important; font-size: 0.75rem;">
+                                    {{ emp.department.get_name_display }}
+                                </span>
+                            </td>
+                            <td class="py-3 text-center">
+                                <div class="d-inline-flex align-items-center gap-3">
+                                    <span class="status-label small fw-bold font-monospace" style="font-size: 0.72rem; min-width: 55px;">
+                                        {% if attendance_record and attendance_record.present %}
+                                            <span class="text-success">PRESENT</span>
+                                        {% elif attendance_record and not attendance_record.present %}
+                                            <span class="text-danger">ABSENT</span>
+                                        {% else %}
+                                            <span class="text-success">PRESENT</span> {% endif %}
+                                    </span>
+                                    <div class="form-check form-switch m-0 p-0 d-flex align-items-center">
+                                        <input class="form-check-input attendance-check shadow-none m-0 pointer" type="checkbox" 
+                                               style="width: 2.6rem; height: 1.35rem;" onchange="updateStatusLabel(this)"
+                                               {% if attendance_record == None or attendance_record.present %}checked{% endif %}>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="pe-3 py-3">
+                                <input type="text" class="form-control form-control-sm remark-input shadow-none border font-sans" 
+                                       placeholder="Provide entry deviation or holiday notations if needed..."
+                                       style="font-size: 0.82rem; border-color: rgba(175, 143, 74, 0.2) !important; background: transparent;"
+                                       value="{{ attendance_record.remarks|default_if_none:'' }}">
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted small">
+                                <i class="bi bi-exclamation-triangle d-block fs-3 mb-2" style="color: var(--gold-light);"></i>
+                                No structural corporate team members found on active contracts.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Handle Global Sequence Date Filtering Interchanges
+    document.getElementById('attendanceDate').addEventListener('change', function() {
+        window.location.href = "?date=" + this.value;
+    });
+
+    // Real-time Textual Feedback Switch Intercepts
+    function updateStatusLabel(checkbox) {
+        const row = checkbox.closest('tr');
+        const labelContainer = row.querySelector('.status-label');
+        if (checkbox.checked) {
+            labelContainer.innerHTML = '<span class="text-success">PRESENT</span>';
+        } else {
+            labelContainer.innerHTML = '<span class="text-danger">ABSENT</span>';
+        }
+    }
+
+    // High-Fidelity Unified Document Record Persistence Pipeline
+    async function saveAll() {
+        const date = document.getElementById('attendanceDate').value;
+        const rows = document.querySelectorAll('#attendanceBody tr[data-emp-id]');
+        const records = [];
+
+        rows.forEach(row => {
+            records.push({
+                emp_id: row.getAttribute('data-emp-id'),
+                present: row.querySelector('.attendance-check').checked,
+                remarks: row.querySelector('.remark-input').value.trim()
+            });
+        });
+
+        try {
+            const response = await fetch("{% url 'save_attendance' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ date, records })
+            });
+
+            const outputData = await response.json();
+            
+            if (response.ok && outputData.status === 'success') {
+                alert("Database Update Complete: Workforce presence patterns committed successfully for " + date);
+                window.location.reload();
+            } else {
+                alert("Execution Halted: " + (outputData.message || "Failed committing matrix parameters."));
+            }
+        } catch (error) {
+            alert("Network Pipeline Instability Detected: " + error);
+        }
+    }
+</script>
+{% endblock %}
