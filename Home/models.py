@@ -20,26 +20,18 @@ kenyan_phone_validator = RegexValidator(
 # =========================================================
 # DEPARTMENTS
 # =========================================================
+from django.db import models
 
 class Department(models.Model):
-    FARMING = 'farming'
-    TRANSPORT = 'transport'
-    ADMINISTRATION = 'administration'
-
-    NAME_CHOICES = [
-        (FARMING, 'Farming'),
-        (TRANSPORT, 'Transport'),
-        (ADMINISTRATION, 'Administration'),
-    ]
-
-    name = models.CharField(max_length=20, choices=NAME_CHOICES, unique=True)
+    # Changed to a standard CharField without fixed choices
+    name = models.CharField(max_length=50, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
 
     def __str__(self):
-        return self.get_name_display()
+        return self.name
 
 # =========================================================
 # EMPLOYEES
@@ -209,16 +201,7 @@ class Expense(models.Model):
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-# class GeneralLedger(models.Model):
-    # TYPE_CHOICES = [('income', 'Income'), ('expense', 'Expense')]
-    # transaction_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
-    # department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
-    # amount = models.DecimalField(max_digits=15, decimal_places=2)
-    # description = models.CharField(max_length=255)
-    # reference_number = models.CharField(max_length=100, blank=True)
-    # Changed from User to settings.AUTH_USER_MODEL
-    # created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    # timestamp = models.DateTimeField(auto_now_add=True)
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey

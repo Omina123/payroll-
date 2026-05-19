@@ -22,6 +22,7 @@ path('delete_department/<int:pk>/', delete_department, name="delete_department")
     path('assets/add/', asset_create_or_edit, name='asset_create'),
     path('employees/edit/<int:pk>/', edit_employee, name='edit_employee'),
     path('employees/delete/<int:pk>/', delete_employee, name='delete_employee'),
+    path ('delete_asset<int:pk>/', delete_asset, name='delete_asset'),
     path('employees/toggle-status/<int:pk>/', toggle_employee_status, name='toggle_employee_status'),
     path('assets/edit/<int:pk>/', asset_create_or_edit, name='asset_edit'),
     path('maintenance/', maintenance_list, name='maintenance_list'),

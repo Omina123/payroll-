@@ -26,21 +26,38 @@
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
 
     <style>
-        /* Forces all carousel images to match perfectly in height and crops cleanly without stretching */
-        .carousel-item img {
-            height: 650px; 
-            object-fit: cover;
-            width: 100%;
+        /* Modern carousel structure rules overriding missing image canvas blocks */
+        .carousel-item {
+            height: 650px;
+            min-height: 650px;
+            background-color: #1a2a1a;
         }
-        /* Fixed sizing aspect ratios for HR module images down below */
+        .carousel-item img {
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .carousel-caption {
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.45);
+        }
         .service-img img {
             height: 250px;
             object-fit: cover;
             width: 100%;
         }
         @media (max-width: 768px) {
-            .carousel-item img {
-                height: 400px; /* Responsive height scaling for smaller mobile screens */
+            .carousel-item, .carousel-item img {
+                height: 400px;
+                min-height: 400px;
             }
         }
     </style>
@@ -88,50 +105,50 @@
         </div>
     </nav>
 
-    <div class="container-fluid px-0 mb-5">
-        <div id="header-carousel" class="carousel slide" data-bs-ride="carousel">
-            <div class="carousel-inner">
-                
-                <div class="carousel-item active">
-                    <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1600&auto=format&fit=crop" alt="Staff Management Portal View">
-                    <div class="carousel-caption">
-                        <div class="container">
-                            <div class="row justify-content-start">
-                                <div class="col-lg-8 text-start">
-                                    <p class="fs-4 text-white">Automated Salary Disbursement</p>
-                                    <h1 class="display-1 text-white mb-5 animated slideInRight">Accurate Payroll, On Time, Every Time</h1>
-                                    <a href="#" class="btn btn-secondary rounded-pill py-3 px-5 animated slideInRight">Process Monthly Payroll</a>
-                                </div>
+    <div id="header-carousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            
+            <div class="carousel-item active">
+                <img src="{% static 'img/omina.jpg' %}"
+                 class="w-100" alt="Automated Salary Disbursement">
+                <div class="carousel-caption">
+                    <div class="container">
+                        <div class="row justify-content-start">
+                            <div class="col-lg-8 text-start">
+                                <p class="fs-4 text-white animated slideInDown">Automated Salary Disbursement</p>
+                                <h1 class="display-1 text-white mb-5 animated slideInLeft">Accurate Payroll, On Time, Every Time</h1>
+                                <a href="#" class="btn btn-secondary rounded-pill py-3 px-5 animated slideInLeft">Process Monthly Payroll</a>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="carousel-item">
-                    <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=1600&auto=format&fit=crop" alt="Payroll Dashboard View">
-                    <div class="carousel-caption">
-                        <div class="container">
-                            <div class="row justify-content-end">
-                                <div class="col-lg-8 text-end">
-                                    <p class="fs-4 text-white">Compliance & Tax Management</p>
-                                    <h1 class="display-1 text-white mb-5 animated slideInRight">Generate Statutory Reports in One Click</h1>
-                                    <a href="#" class="btn btn-secondary rounded-pill py-3 px-5 animated slideInLeft">Download P9 Forms</a>
-                                </div>
+            <div class="carousel-item">
+                <img src="{% static 'img/loory.jpeg' %}"
+                 class="w-100" alt="Compliance & Tax Management">
+                <div class="carousel-caption">
+                    <div class="container">
+                        <div class="row justify-content-end">
+                            <div class="col-lg-8 text-end">
+                                <p class="fs-4 text-white animated slideInDown">Compliance & Tax Management</p>
+                                <h1 class="display-1 text-white mb-5 animated slideInRight">Generate Statutory Reports in One Click</h1>
+                                <a href="#" class="btn btn-secondary rounded-pill py-3 px-5 animated slideInRight">Download P9 Forms</a>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
         </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
     </div>
 
     <div class="container-xxl py-5">

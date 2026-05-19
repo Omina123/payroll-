@@ -47,7 +47,7 @@
                             </td>
                             <td class="py-3">
                                 <span class="badge border py-1 px-2 font-monospace text-dark" style="background: var(--paper-bg); border-color: var(--gold-light) !important; font-size: 0.75rem;">
-                                    {{ emp.department.get_name_display }}
+                                    {{ emp.department.name }}
                                 </span>
                             </td>
                             <td class="py-3 font-monospace text-muted" style="font-size: 0.82rem;">{{ emp.id_number }}</td>
@@ -102,7 +102,7 @@
                                                 <label class="form-label small fw-bold text-uppercase" style="color: var(--ink-muted); font-size: 0.68rem; letter-spacing: 0.5px;">Department Assignation</label>
                                                 <select name="department" class="form-select shadow-none border py-2" style="border-color: var(--gold-light) !important;" required>
                                                     {% for dept in departments %}
-                                                    <option value="{{ dept.id }}" {% if emp.department.id == dept.id %}selected{% endif %}>{{ dept.get_name_display }}</option>
+                                                    <option value="{{ dept.id }}" {% if emp.department.id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
@@ -170,7 +170,7 @@
                         <select name="department" class="form-select shadow-none border py-2" style="border-color: var(--gold-light) !important;" required>
                             <option value="" selected disabled>Choose enterprise branch assignment...</option>
                             {% for dept in departments %}
-                            <option value="{{ dept.id }}">{{ dept.get_name_display }}</option>
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
                             {% endfor %}
                         </select>
                     </div>

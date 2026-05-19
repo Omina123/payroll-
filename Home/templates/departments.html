@@ -24,13 +24,13 @@
                     <form method="POST">
                         {% csrf_token %}
                         <div class="mb-4">
-                            <label class="form-label small fw-bold text-uppercase tracking-wider" style="color: var(--ink-muted); font-size: 0.7rem; letter-spacing: 0.5px;">Select Department Identifier</label>
-                            <select name="name" class="form-select border shadow-none py-2" style="background: #fff; border-color: var(--gold-light) !important; font-size: 0.88rem; color: var(--ink-dark);" required>
-                                <option value="" selected disabled>Choose classification entry...</option>
-                                {% for value, label in choices %}
-                                    <option value="{{ value }}">{{ label }}</option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label small fw-bold text-uppercase tracking-wider" style="color: var(--ink-muted); font-size: 0.7rem; letter-spacing: 0.5px;">Department Name</label>
+                            <input type="text" 
+                                   name="name" 
+                                   class="form-control border shadow-none py-2" 
+                                   placeholder="e.g., Logistics, Dairy Management..."
+                                   style="background: #fff; border-color: var(--gold-light) !important; font-size: 0.88rem; color: var(--ink-dark);" 
+                                   required>
                         </div>
                         
                         <button type="submit" class="btn w-100 d-flex align-items-center justify-content-center fw-semibold text-white transition-all py-2" style="background: var(--ink-dark); border: 1px solid var(--gold-primary); font-size: 0.85rem;">
@@ -58,7 +58,6 @@
                             <thead>
                                 <tr style="border-bottom: 2px solid var(--gold-light); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-muted);">
                                     <th class="ps-3 py-2">Department Name</th>
-                                    <th class="py-2">System Code</th>
                                     <th class="py-2">Established On</th>
                                     <th class="pe-3 py-2 text-end">Actions</th>
                                 </tr>
@@ -67,12 +66,7 @@
                                 {% for dept in departments %}
                                 <tr style="border-bottom: 1px solid rgba(175, 143, 74, 0.15);">
                                     <td class="ps-3 py-3 fw-bold" style="color: var(--ink-dark);">
-                                        {{ dept.get_name_display }}
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="badge font-monospace text-dark border py-1 px-2" style="background: var(--paper-bg); border-color: var(--gold-light) !important; font-size: 0.75rem;">
-                                            {{ dept.name }}
-                                        </span>
+                                        {{ dept.name }}
                                     </td>
                                     <td class="py-3 fw-medium text-muted" style="font-size: 0.85rem;">
                                         {{ dept.created_at|date:"d M Y" }}
@@ -81,14 +75,14 @@
                                         <a href="{% url 'delete_department' dept.id %}" 
                                            class="btn btn-sm d-inline-flex align-items-center justify-content-center transition-all border" 
                                            style="width: 32px; height: 32px; background: #fff; border-color: rgba(220, 53, 69, 0.25) !important; color: #dc3545;"
-                                           onclick="return confirm('Are you completely sure you want to delete the {{ dept.get_name_display }} department? This action will completely erase this branch record entry.');">
+                                           onclick="return confirm('Are you completely sure you want to delete the {{ dept.name }} department? This action will completely erase this branch record entry.');">
                                             <i class="bi bi-trash3-fill" style="font-size: 0.82rem;"></i>
                                         </a>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted small">
+                                    <td colspan="3" class="text-center py-5 text-muted small">
                                         <i class="bi bi-building-exclamation d-block fs-3 mb-2" style="color: var(--gold-light);"></i>
                                         No active operational branches or structural departments are currently registered in this workspace environment ledger.
                                     </td>

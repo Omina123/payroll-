@@ -196,31 +196,55 @@ def delete_department(request, pk):
     
     # 5. Redirect cleanly using the registered path name string mapping
     return redirect('department_list')
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import Department
+
 def department_list(request):
     if request.method == "POST":
-        name = request.POST.get('name')
+        # Strip trailing/leading whitespace from user input
+        name = request.POST.get('name', '').strip()
+        
         if name:
-            # Check if it already exists to avoid unique constraint errors
-            if not Department.objects.filter(name=name).exists():
+            # Case-insensitive validation check to prevent duplicates
+            if not Department.objects.filter(name__iexact=name).exists():
                 Department.objects.create(name=name)
                 messages.success(request, f"Department '{name}' added successfully!")
             else:
-                messages.error(request, "This department already exists.")
+                messages.error(request, f"The department '{name}' already exists.")
+        else:
+            messages.error(request, "Department name cannot be blank.")
+            
         return redirect('department_list')
 
     departments = Department.objects.all()
-    choices = Department.NAME_CHOICES 
     
     return render(request, 'departments.html', {
         'departments': departments,
-        'choices': choices
     })
+# def department_list(request):
+    # if request.method == "POST":
+        # name = request.POST.get('name')
+        # if name:
+            # Check if it already exists to avoid unique constraint errors
+            # if not Department.objects.filter(name=name).exists():
+                # Department.objects.create(name=name)
+                # messages.success(request, f"Department '{name}' added successfully!")
+            # else:
+                # messages.error(request, "This department already exists.")
+        # return redirect('department_list')
+
+    # departments = Department.objects.all()
+    # choices = Department.NAME_CHOICES 
+    
+    # return render(request, 'departments.html', {
+        # 'departments': departments,
+        # 'choices': choices
+    # })
 
 # =========================================================
 # EMPLOYEES & ATTENDANCE
-# =========================================================
-
-
+# ========================================================
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -237,7 +261,7 @@ def employee_list(request):
         phone = request.POST.get('phone_number')
         salary = request.POST.get('basic_salary') or '0.00'
         hire_date = request.POST.get('hire_date')
-
+        
         try:
             dept = Department.objects.get(id=dept_id)
             Employee.objects.create(
@@ -247,22 +271,21 @@ def employee_list(request):
                 id_number=id_number,
                 phone_number=phone,
                 basic_salary=Decimal(salary),
+                # parent_assignment=None, # Safety structural definition slot
                 hire_date=hire_date,
                 created_by=request.user
             )
-            messages.success(request, f"Employee {first_name} {last_name} onboarded successfully!")
+            messages.success(request, f"Employee '{first_name} {last_name}' added successfully!")
         except Exception as e:
             messages.error(request, f"Error adding employee record: {e}")
-
         return redirect('employee_list')
-
-    employees = Employee.objects.all().select_related('department').order_by('-hire_date')
+        
+    employees = Employee.objects.all().select_related('department').order_by('first_name')
     departments = Department.objects.all()
     return render(request, 'employees.html', {
         'employees': employees,
         'departments': departments
     })
-
 
 @login_required(login_url='/login/')
 def edit_employee(request, pk):
@@ -279,7 +302,7 @@ def edit_employee(request, pk):
             emp.save()
             messages.success(request, f"Profile parameters for {emp.first_name} updated successfully.")
         except Exception as e:
-            messages.error(request, f"Failed updating system entity parameters: {e}")
+            messages.error(request, f"Failed updating system entity: {e}")
             
     return redirect('employee_list')
 
@@ -645,7 +668,16 @@ def payslip_detail(request, pk):
 # =========================================================
 # ASSETS AND MAINTENANCE (WITH LEDGER integration)
 # =========================================================
-
+def delete_asset(request, pk):
+    deli = get_object_or_404(Asset, id=pk)
+    name =deli.name
+    try:
+        deli.delete()
+        messages.success(request, f"Asset record sequence for '{name}' was purged from system ledgers.")
+    except Exception as e:
+        messages(request,f"Error deleting asset: {e}")
+    return redirect('asset_list')
+    
 def asset_list(request):
     query = request.GET.get('q')
     status_filter = request.GET.get('status')
@@ -923,8 +955,7 @@ def farming_create_or_edit(request, pk=None):
 
         # Resolve ledger routing classifications (Crops vs Livestock)
         ledger_source_tag = 'farming_crops' if activity.category == 'crops' else 'farming_livestock'
-        farming_department = Department.objects.filter(name=Department.FARMING).first()
-
+        farming_department = Department.objects.filter(name__icontains='Crops').first()
         # Clean old ledger logs for this project using explicit tracking reference IDs
         GeneralLedger.objects.filter(
             reference_number__in=[f"FRM-EXP-{activity.id}", f"FRM-INC-{activity.id}"]

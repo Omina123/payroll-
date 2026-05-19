@@ -67,6 +67,8 @@
                             <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            <a href ="{% url 'delete_asset' asset.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this asset?');">
+                                <i class="bi bi-trash"></i>
                         </td>
                     </tr>
                     {% empty %}
