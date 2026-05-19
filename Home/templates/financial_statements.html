@@ -1,0 +1,145 @@
+{% extends 'baseAdmin.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid px-2">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold m-0" style="font-size: 1.6rem; color: var(--ink-dark); letter-spacing: -0.5px;">Financial Audits & Statements</h3>
+            <p class="small m-0 mt-1" style="color: var(--ink-muted);">Automated Cash Flow statements and double-entry balance sheets sourced from active general ledger data strings.</p>
+        </div>
+        
+        <a href="?{{ request.GET.urlencode }}&download=true" 
+           class="btn d-flex align-items-center fw-semibold text-white transition-all py-2 px-3"
+           style="background: var(--ink-dark); border: 1px solid var(--gold-primary); font-size: 0.85rem;">
+            <i class="bi bi-cloud-arrow-down-fill me-2" style="color: var(--gold-primary);"></i> Download Statement (.CSV)
+        </a>
+    </div>
+
+    <div class="ledger-card p-3 mb-4" style="background: rgba(0,0,0,0.01); border-color: var(--gold-light) !important;">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted" style="font-size:0.68rem;">Reporting From</label>
+                <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm shadow-none">
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted" style="font-size:0.68rem;">Reporting To</label>
+                <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm shadow-none">
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted" style="font-size:0.68rem;">Department Unit</label>
+                <select name="department" class="form-select form-select-sm shadow-none">
+                    <option value="">All Operational Branches</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept == dept.id|stringformat:"i" %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-6 col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-dark w-100 fw-semibold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Filter Data Matrix</button>
+                <a href="{% url 'financial_statements' %}" class="btn btn-sm btn-outline-secondary w-50 fw-semibold text-uppercase" style="font-size:0.75rem;">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="ledger-card p-0 overflow-hidden h-100">
+                <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.02);">
+                    <h6 class="m-0 fw-bold" style="color: var(--ink-dark); font-size: 0.9rem; letter-spacing: 0.3px;">
+                        <i class="bi bi-arrow-left-right me-2" style="color: var(--gold-primary);"></i> Cash Flow Statement
+                    </h6>
+                    <span class="badge text-dark border font-monospace" style="background:#fff; font-size: 0.65rem;">Periodic Flow</span>
+                </div>
+                
+                <div class="p-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-borderless m-0">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--gold-light); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-muted);">
+                                    <th class="py-2">Operational Flow Component</th>
+                                    <th class="py-2 text-end">Value (KES)</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 0.9rem;">
+                                <tr>
+                                    <td class="py-3 fw-semibold text-dark">Cash Inflows (Aggregated Revenues)</td>
+                                    <td class="py-3 text-end text-success font-monospace fw-bold">+ {{ total_income|intcomma }}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(175, 143, 74, 0.15);">
+                                    <td class="py-3 fw-semibold text-dark">Cash Outflows (Operational Expense Outlays)</td>
+                                    <td class="py-3 text-end text-danger font-monospace fw-bold">- {{ total_expense|intcomma }}</td>
+                                </tr>
+                                <tr class="align-middle" style="background: rgba(0,0,0,0.02);">
+                                    <td class="py-3 fw-bold text-uppercase" style="font-size: 0.82rem; color: var(--ink-dark);">Net Cash Flow Position</td>
+                                    <td class="py-3 text-end font-monospace fw-bold text-dark {% if net_cash_flow < 0 %}text-danger{% else %}text-success{% endif %}" style="font-size: 1.05rem;">
+                                        KES {{ net_cash_flow|intcomma }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="ledger-card p-0 overflow-hidden h-100">
+                <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.02);">
+                    <h6 class="m-0 fw-bold" style="color: var(--ink-dark); font-size: 0.9rem; letter-spacing: 0.3px;">
+                        <i class="bi bi-scales me-2" style="color: var(--gold-primary);"></i> Statement of Financial Position
+                    </h6>
+                    <span class="badge text-dark border font-monospace" style="background:#fff; font-size: 0.65rem;">Balance Sheet Snapshot</span>
+                </div>
+
+                <div class="p-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-borderless m-0 mb-4">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--gold-light); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-muted);">
+                                    <th class="py-2">ASSET CATEGORY LINES</th>
+                                    <th class="py-2 text-end">Amount (KES)</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 0.88rem;">
+                                <tr style="border-bottom: 1px solid rgba(175, 143, 74, 0.1);">
+                                    <td class="py-2 text-muted ps-2">Current Assets: Cash Reserves & Bank Balance</td>
+                                    <td class="py-2 text-end font-monospace fw-bold text-dark">{{ cash_asset|intcomma }}</td>
+                                </tr>
+                                <tr style="background: rgba(175, 143, 74, 0.04);">
+                                    <td class="py-2 fw-bold text-dark ps-2" style="font-size:0.78rem;">TOTAL ESTIMATED CAPITAL ASSETS</td>
+                                    <td class="py-2 text-end font-monospace fw-bold text-dark" style="font-size:0.9rem;">KES {{ total_assets|intcomma }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="table align-middle table-borderless m-0">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--gold-light); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-muted);">
+                                    <th class="py-2">EQUITY & LIABILITY LINES</th>
+                                    <th class="py-2 text-end">Amount (KES)</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 0.88rem;">
+                                <tr style="border-bottom: 1px solid rgba(175, 143, 74, 0.1);">
+                                    <td class="py-2 text-muted ps-2">Capital Equity: Retained Net Operational Earnings</td>
+                                    <td class="py-2 text-end font-monospace fw-bold text-dark">{{ retained_earnings|intcomma }}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(175, 143, 74, 0.1);">
+                                    <td class="py-2 text-muted ps-2">Short-Term Liabilities: Ledger Bank Overdrafts</td>
+                                    <td class="py-2 text-end font-monospace fw-bold text-dark">{{ bank_overdraft|intcomma }}</td>
+                                </tr>
+                                <tr style="background: rgba(26, 37, 44, 0.03);">
+                                    <td class="py-2 fw-bold text-dark ps-2" style="font-size:0.78rem;">TOTAL LOGICAL EQUITY & LIABILITIES</td>
+                                    <td class="py-2 text-end font-monospace fw-bold text-dark" style="font-size:0.9rem;">KES {{ total_equity_liabilities|intcomma }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

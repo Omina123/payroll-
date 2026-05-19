@@ -37,5 +37,6 @@ path('expenses/', expense_list, name='expense_list'),
 path('expenses/add/', expense_create, name='expense_create'),
 path('ledger/', ledger_list, name='ledger_list'),
 path('ledger/new/', ledger_create, name='ledger_create'),
+path('accounting/statements/', financial_statements_dashboard, name='financial_statements'),
 
 ]

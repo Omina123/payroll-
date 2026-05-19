@@ -416,132 +416,6 @@ def download_attendance(request):
 
 @login_required(login_url='/login/')
 
-# def payroll_list(request):
-#     today = timezone.now()
-#     month = int(request.GET.get('month', today.month))
-#     year = int(request.GET.get('year', today.year))
-    
-#     # Static list of months for human-readable display names mapping
-#     MONTH_NAMES = [
-#         (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
-#         (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
-#         (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')
-#     ]
-    
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             form_month = int(data.get('month', month))
-#             form_year = int(data.get('year', year))
-#             batch_status = data.get('status', 'pending')
-#             slips_payload = data.get('slips', [])
-#             is_generation_pass = data.get('generate_missing', False)
-            
-#             target_date = datetime(form_year, form_month, 1).date()
-#             payment_date_val = timezone.now().date() if batch_status == 'paid' else None
-            
-#             # --- ACTION A: GENERATE PAYSLIPS FOR NEW/MISSING EMPLOYEES ---
-#             if is_generation_pass:
-#                 # Find active employees who don't have a payslip yet for this period
-#                 existing_payslip_emp_ids = Payslip.objects.filter(
-#                     month_year__month=form_month, 
-#                     month_year__year=form_year
-#                 ).values_list('employee_id', flat=True)
-                
-#                 missing_employees = Employee.objects.filter(is_active=True).exclude(id__in=existing_payslip_emp_ids)
-                
-#                 generated_count = 0
-#                 for emp in missing_employees:
-#                     # Create baseline payslip record structure
-#                     Payslip.objects.create(
-#                         employee=emp,
-#                         month_year=target_date,
-#                         allowances=Decimal('0.00'),
-#                         deductions=Decimal('0.00'),
-#                         description='',
-#                         status='pending'
-#                     )
-#                     generated_count += 1
-                
-#                 return JsonResponse({
-#                     'status': 'success',
-#                     'message': f"Processed matching payroll structures. Formed {generated_count} new employee payslip entries."
-#                 })
-            
-#             # --- ACTION B: BULK UPDATE EXSTING ROW DATA ---
-#             updated_count = 0
-#             payslip_content_type = ContentType.objects.get_for_model(Payslip)
-            
-#             for item in slips_payload:
-#                 emp_id = item.get('employee_id')
-#                 allowances = Decimal(item.get('allowances', '0.00') or '0.00')
-#                 deductions = Decimal(item.get('deductions', '0.00') or '0.00')
-#                 description = item.get('description', '').strip()
-                
-#                 employee = Employee.objects.get(id=emp_id)
-                
-#                 slip, created = Payslip.objects.get_or_create(
-#                     employee=employee,
-#                     month_year=target_date,
-#                     defaults={
-#                         'allowances': allowances,
-#                         'deductions': deductions,
-#                         'description': description,
-#                         'status': batch_status,
-#                         'payment_date': payment_date_val
-#                     }
-#                 )
-                
-#                 if not created:
-#                     slip.allowances = allowances
-#                     slip.deductions = deductions
-#                     slip.description = description
-#                     slip.status = batch_status
-#                     if batch_status == 'paid' and not slip.payment_date:
-#                         slip.payment_date = payment_date_val
-#                     slip.save()
-                
-#                 # If individual payslip status transitions directly to PAID, register general ledger statement entry
-#                 if batch_status == 'paid':
-#                     GeneralLedger.objects.update_or_create(
-#                         content_type=payslip_content_type,
-#                         object_id=slip.id,
-#                         defaults={
-#                             'transaction_type': 'expense',
-#                             'ledger_source': 'payroll',
-#                             'department': employee.department,
-#                             'amount': slip.net_pay,
-#                             'description': f"Payroll Disbursed: {employee} ({target_date.strftime('%B %Y')})",
-#                             'reference_number': f"PAY-{slip.id}",
-#                             'created_by': request.user
-#                         }
-#                     )
-                
-#                 updated_count += 1
-                
-#             return JsonResponse({
-#                 'status': 'success', 
-#                 'message': f"Successfully saved configuration for {updated_count} individual employee payslips."
-#             })
-#         except Exception as e:
-#             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
-#     # Filter out active records for view presentation layer
-#     payslips = Payslip.objects.filter(
-#         month_year__month=month, 
-#         month_year__year=year
-#     ).select_related('employee', 'employee__department')
-    
-#     return render(request, 'payroll.html', {
-#         'payslips': payslips,
-#         'selected_month': month,
-#         'selected_year': year,
-#         'months': MONTH_NAMES,
-#         'years': range(today.year - 2, today.year + 2)
-#     })
- # Adjust imports based on your app name
-
-@login_required
 def payroll_list(request):
     today = timezone.now()
     month = int(request.GET.get('month', today.month))
@@ -852,70 +726,6 @@ def farming_list(request):
     total_revenue = activities.aggregate(Sum('sales_income'))['sales_income__sum'] or 0
     return render(request, 'activity_list.html', {'activities': activities, 'total_revenue': total_revenue})
 
-# @login_required
-# def farming_create_or_edit(request, pk=None):
-    # activity = get_object_or_404(FarmingActivity, pk=pk) if pk else None
-    
-    # if request.method == 'POST':
-        # fields = [
-            # 'category', 'activity_name', 'feeds_cost', 'vet_expenses', 
-            # 'land_prep_cost', 'labor_cost', 'fertilizer_cost', 'seed_cost', 
-            # 'sales_income', 'date_started', 'closing_date', 'notes'
-        # ]
-        # 
-        # if not activity:
-            # activity = FarmingActivity()
-            # 
-        # for field in fields:
-            # val = request.POST.get(field)
-            # if val == "" and field not in ['category', 'activity_name', 'date_started', 'closing_date', 'notes']: 
-                # val = '0.00'
-            # elif val == "" and field in ['closing_date', 'notes']:
-                # val = None
-            # setattr(activity, field, val)
-            
-        # activity.is_closed = 'is_closed' in request.POST
-        # activity.save()
-
-        # Resolve ledger routing code according to crop vs livestock classifications
-        # ledger_source_tag = 'farming_crops' if activity.category == 'crops' else 'farming_livestock'
-        # farming_department = Department.objects.filter(name=Department.FARMING).first()
-
-        # 1. Clear any old/stale generic ledger logs for this project to prevent duplicate stacking on updates
-        # from django.contrib.contenttypes.models import ContentType
-        # activity_ct = ContentType.objects.get_for_model(activity)
-        # GeneralLedger.objects.filter(content_type=activity_ct, object_id=activity.id).delete()
-
-        # 2. Record operational input investment costs to Ledger (Expense)
-        # if activity.total_costs > 0:
-            # GeneralLedger.objects.create(
-                # transaction_type='expense',
-                # ledger_source=ledger_source_tag,
-                # department=farming_department,
-                # amount=activity.total_costs,
-                # description=f"Operational Costs: Production Cycle '{activity.activity_name}'",
-                # reference_number=f"FRM-EXP-{activity.id}",
-                # content_object=activity,
-                # created_by=request.user
-            # )
-
-        # 3. If closed or has sales metrics, record harvested market profit income to Ledger (Income)
-        # if activity.sales_income > 0:
-            # GeneralLedger.objects.create(
-                # transaction_type='income',
-                # ledger_source=ledger_source_tag,
-                # department=farming_department,
-                # amount=activity.sales_income,
-                # description=f"Market Revenue Settlement: Cycle '{activity.activity_name}'",
-                # reference_number=f"FRM-INC-{activity.id}",
-                # content_object=activity,
-                # created_by=request.user
-            # )
-        
-        # messages.success(request, f"Farming activity details for '{activity.activity_name}' synchronized across ledger lines.")
-        # return redirect('farming_list')
-
-    # return render(request, 'activity_form.html', {'activity': activity})
 from decimal import Decimal, InvalidOperation
 
 @login_required
@@ -1072,4 +882,88 @@ def ledger_create(request):
     return render(request, 'ledger_form.html', {
         'departments': departments,
         'ledger_source_choices': GeneralLedger.ledger_source
+    })
+import csv
+from decimal import Decimal
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.utils import timezone
+from .models import GeneralLedger, Department
+
+@login_required
+def financial_statements_dashboard(request):
+    # 1. Handle Optional Date Filtering
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    dept_id = request.GET.get('department')
+
+    ledger_qs = GeneralLedger.objects.all()
+    if start_date:
+        ledger_qs = ledger_qs.filter(timestamp__date__gte=start_date)
+    if end_date:
+        ledger_qs = ledger_qs.filter(timestamp__date__lte=end_date)
+    if dept_id:
+        ledger_qs = ledger_qs.filter(department_id=dept_id)
+
+    # 2. Compute Cash Flow Aggregations
+    total_income = ledger_qs.filter(transaction_type='income').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    total_expense = ledger_qs.filter(transaction_type='expense').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+    net_cash_flow = total_income - total_expense
+
+    # 3. Compute Balance Sheet Structural Snapshot
+    # Historical retained metrics govern equity position balances
+    retained_earnings = total_income - total_expense
+    
+    cash_asset = retained_earnings if retained_earnings > 0 else Decimal('0.00')
+    bank_overdraft = abs(retained_earnings) if retained_earnings < 0 else Decimal('0.00')
+    
+    total_assets = cash_asset
+    total_equity_liabilities = retained_earnings + bank_overdraft if retained_earnings < 0 else retained_earnings
+
+    # 4. HANDLE EXPORT/DOWNLOAD REQUEST
+    if 'download' in request.GET:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="Financial_Statement_{timezone.now().strftime("%Y%m%d")}.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['FINANCIAL STATEMENT EXPORT', timezone.now().strftime('%d %B %Y')])
+        writer.writerow([])
+        
+        # Section A: Cash Flow
+        writer.writerow(['1. CASH FLOW STATEMENT'])
+        writer.writerow(['Line Item', 'Amount (KES)'])
+        writer.writerow(['Total Cash Inflows (Income)', total_income])
+        writer.writerow(['Total Cash Outflows (Expenses)', total_expense])
+        writer.writerow(['NET CASH FLOW POSITION', net_cash_flow])
+        writer.writerow([])
+        
+        # Section B: Balance Sheet
+        writer.writerow(['2. BALANCE SHEET SNAPSHOT'])
+        writer.writerow(['Category', 'Line Item', 'Amount (KES)'])
+        writer.writerow(['Assets', 'Current Cash/Bank Balance', cash_asset])
+        writer.writerow(['Assets', 'TOTAL ENTERPRISE ASSETS', total_assets])
+        writer.writerow(['Equity & Liab', 'Retained Earnings (Equity)', retained_earnings])
+        writer.writerow(['Equity & Liab', 'Bank Overdraft (Short-term Liability)', bank_overdraft])
+        writer.writerow(['Equity & Liab', 'TOTAL EQUITY AND LIABILITIES', total_equity_liabilities])
+        
+        return response
+
+    # Context items for UI rendering
+    departments = Department.objects.all()
+    
+    return render(request, 'financial_statements.html', {
+        'total_income': total_income,
+        'total_expense': total_expense,
+        'net_cash_flow': net_cash_flow,
+        'cash_asset': cash_asset,
+        'bank_overdraft': bank_overdraft,
+        'total_assets': total_assets,
+        'retained_earnings': retained_earnings,
+        'total_equity_liabilities': total_equity_liabilities,
+        'departments': departments,
+        'start_date': start_date,
+        'end_date': end_date,
+        'selected_dept': dept_id
     })

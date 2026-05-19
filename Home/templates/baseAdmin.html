@@ -266,7 +266,7 @@
                     <span class="icon-box"><i class="bi bi-wrench-adjustable"></i></span>System Services
                 </a>
                 
-                <div class="nav-group-header">Financial Records</div>
+                <div class="nav-group-header">Financial Records and Reports</div>
                 <a class="nav-link" href="{% url 'payroll_list' %}">
                     <span class="icon-box"><i class="bi bi-wallet2"></i></span>Generate Payroll
                 </a>
@@ -275,6 +275,9 @@
                 {% comment %} </a> {% endcomment %}
                 <a class="nav-link" href="{% url 'ledger_list' %}">
                     <span class="icon-box"><i class="bi bi-journal-check"></i></span>General Ledger
+                </a>
+                <a class="nav-link" href="{% url 'financial_statements' %}">
+                    <span class="icon-box"><i class="bi bi-file"></i></span>Financial Statements
                 </a>
             </nav>
         </div>
