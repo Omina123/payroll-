@@ -154,6 +154,30 @@ def ledger_export_word(request):
     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
     response['Content-Disposition'] = 'attachment; filename="general_ledger_statement.docx"'
     return response
+# def admin_dashboard(request):
+    # Statistics for the Dashboard cards
+    # context = {
+        # 'total_employees': Employee.objects.filter(is_active=True).count(),
+        # 'total_assets': Asset.objects.count(),
+        # 'monthly_expenses': Expense.objects.filter(
+            # expense_date__month=timezone.now().month
+        # ).aggregate(Sum('amount'))['amount__sum'] or 0,
+        
+        # 'farming_income': FarmingActivity.objects.aggregate(Sum('sales_income'))['sales_income__sum'] or 0,
+        
+        # Recent Activities for a table
+        # 'recent_ledger': GeneralLedger.objects.all().order_by('-timestamp')[:5],
+        # 'active_farming': FarmingActivity.objects.filter(is_closed=False),
+    # }
+    # return render(request, 'admin.html', context)
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.utils import timezone
+from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
+from .models import Employee, Asset, Expense, FarmingActivity, GeneralLedger, ChatMessage
+
+@login_required
 def admin_dashboard(request):
     # Statistics for the Dashboard cards
     context = {
@@ -168,9 +192,48 @@ def admin_dashboard(request):
         # Recent Activities for a table
         'recent_ledger': GeneralLedger.objects.all().order_by('-timestamp')[:5],
         'active_farming': FarmingActivity.objects.filter(is_closed=False),
+        
+        # Initial chat messages payload loading limit
+        'chat_messages': ChatMessage.objects.all().order_by('-timestamp')[:50][::-1],
     }
     return render(request, 'admin.html', context)
 
+
+@login_required
+def get_chat_messages(request):
+    """API endpoint running every 2-3 seconds to fetch new context updates"""
+    last_id = request.GET.get('last_id', 0)
+    messages = ChatMessage.objects.filter(id__gt=last_id).order_by('timestamp')
+    
+    message_list = [{
+        'id': msg.id,
+        'sender': msg.sender.username,
+        'is_me': msg.sender == request.user,
+        'message': msg.message,
+        'time': msg.timestamp.strftime('%H:%M')
+    } for msg in messages]
+    
+    return JsonResponse({'messages': message_list})
+
+
+@login_required
+def send_chat_message(request):
+    """API endpoint handling AJAX message submissions"""
+    if request.method == 'POST':
+        msg_text = request.POST.get('message', '').strip()
+        if msg_text:
+            msg = ChatMessage.objects.create(sender=request.user, message=msg_text)
+            return JsonResponse({
+                'status': 'success',
+                'message': {
+                    'id': msg.id,
+                    'sender': msg.sender.username,
+                    'is_me': True,
+                    'message': msg.message,
+                    'time': msg.timestamp.strftime('%H:%M')
+                }
+            })
+    return JsonResponse({'status': 'error'}, status=400)
 # =========================================================
 # DEPARTMENTS
 # =========================================================

@@ -62,10 +62,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-9 col-lg-12">
+    <div class="row g-4">
+        <div class="col-xl-8 col-lg-12">
             <div class="ledger-card p-0 overflow-hidden">
-                
                 <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.01);">
                     <h6 class="m-0 fw-bold d-flex align-items-center" style="color: var(--ink-dark); font-size: 0.9rem; letter-spacing: 0.3px;">
                         <i class="bi bi-journal-text me-2" style="color: var(--gold-primary);"></i> Recent Transactions Ledger
@@ -112,7 +111,53 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-12">
+            <div class="ledger-card p-0 d-flex flex-column" style="height: 480px;">
+                <div class="px-3 py-3 border-bottom d-flex align-items-center justify-content-between" style="border-color: var(--gold-light) !important; background: rgba(0,0,0,0.01);">
+                    <h6 class="m-0 fw-bold d-flex align-items-center" style="color: var(--ink-dark); font-size: 0.9rem;">
+                        <i class="bi bi-chat-left-text me-2" style="color: var(--gold-primary);"></i> System Operations Chat
+                    </h6>
+                    <span class="badge bg-success p-1 rounded-circle" style="width: 8px; height: 8px;" title="Operational Ready"></span>
+                </div>
                 
+                <div id="chatFeedContent" class="p-3 flex-grow-1 overflow-auto" style="font-size: 0.85rem; max-height: 340px; background: rgba(0,0,0,0.01);">
+                    <div id="chatMessageWrapper" class="d-flex flex-column gap-2">
+                        {% for msg in chat_messages %}
+                            {% if msg.sender == request.user %}
+                                <div class="p-2 rounded border ms-auto text-end text-white shadow-sm chat-msg-node" data-msg-id="{{ msg.id }}" style="max-width: 85%; background: var(--ink-dark); border-color: var(--ink-dark);">
+                                    <span class="fw-bold d-block mb-1 text-light" style="font-size: 0.7rem; opacity: 0.7;">YOU</span>
+                                    <div>{{ msg.message }}</div>
+                                </div>
+                            {% else %}
+                                <div class="p-2 rounded bg-white border shadow-sm chat-msg-node" data-msg-id="{{ msg.id }}" style="max-width: 85%; border-color: var(--gold-light) !important;">
+                                    <span class="fw-bold d-block mb-1 text-muted" style="font-size: 0.7rem;">{{ msg.sender.username|upper }}</span>
+                                    <div style="color: var(--ink-dark);">{{ msg.message }}</div>
+                                </div>
+                            {% endif %}
+                        {% empty %}
+                            <div id="emptyChatPlaceholder" class="text-center py-5 text-muted small">
+                                <i class="bi bi-chat-dots d-block fs-4 mb-1"></i> No activity inside conversation feed pipeline.
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="p-2 border-top bg-white" style="border-color: var(--gold-light) !important;">
+                    <form id="dashboardSystemChatForm" onsubmit="executeChatSubmission(event)">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" id="chatInputMessage" class="form-control form-control-sm border shadow-none" 
+                                   placeholder="Type a message to client/admin..." 
+                                   autocomplete="off" style="font-size: 0.85rem; border-color: rgba(175, 143, 74, 0.25) !important;">
+                            <button type="submit" class="btn btn-sm text-white px-3" style="background-color: var(--ink-dark); font-weight: 600;">
+                                <i class="bi bi-send"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -120,32 +165,32 @@
 </div>
 
 <script>
+    // Global variable tracking high-watermark ID for messages
+    let lastMessageId = 0;
+
     document.addEventListener("DOMContentLoaded", function () {
+        // Find highest message ID currently on screen
+        updateLastMessageId();
+        scrollChatToBottom();
+
+        // Start background pooling interval check loop every 2.5 seconds
+        setInterval(fetchNewMessages, 2500);
+
+        // Apology Banner system control
         const banner = document.getElementById("systemApologyBanner");
         const storageKeyStartTime = "apology_banner_start_time";
         const storageKeyDismissed = "apology_banner_dismissed";
-        
-        // 7 Days in Milliseconds: 7 days * 24 hrs * 60 mins * 60 secs * 1000 ms
         const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000; 
         const currentTime = new Date().getTime();
 
-        // Check if user manually dismissed it already
-        if (localStorage.getItem(storageKeyDismissed) === "true") {
-            return;
-        }
-
-        let startTime = localStorage.getItem(storageKeyStartTime);
-
-        if (!startTime) {
-            // First time loading the page, set the anchor timestamp
-            localStorage.setItem(storageKeyStartTime, currentTime);
-            banner.classList.remove("d-none");
-        } else {
-            // Check if 7 days have passed since the anchor timestamp
-            if (currentTime - parseInt(startTime) < sevenDaysInMs) {
+        if (localStorage.getItem(storageKeyDismissed) !== "true") {
+            let startTime = localStorage.getItem(storageKeyStartTime);
+            if (!startTime) {
+                localStorage.setItem(storageKeyStartTime, currentTime);
+                banner.classList.remove("d-none");
+            } else if (currentTime - parseInt(startTime) < sevenDaysInMs) {
                 banner.classList.remove("d-none");
             } else {
-                // Time expired, clean up storage keys
                 localStorage.removeItem(storageKeyStartTime);
             }
         }
@@ -154,6 +199,99 @@
     function dismissBannerPermanently() {
         document.getElementById("systemApologyBanner").remove();
         localStorage.setItem("apology_banner_dismissed", "true");
+    }
+
+    function updateLastMessageId() {
+        const nodes = document.querySelectorAll('.chat-msg-node');
+        if (nodes.length > 0) {
+            const ids = Array.from(nodes).map(n => parseInt(n.getAttribute('data-msg-id')) || 0);
+            lastMessageId = Math.max(...ids);
+        }
+    }
+
+    function scrollChatToBottom() {
+        const feed = document.getElementById("chatFeedContent");
+        feed.scrollTop = feed.scrollHeight;
+    }
+
+    // Dynamic Live Data Synchronization Pull Engine
+    function fetchNewMessages() {
+        fetch(`{% url 'get_chat_messages' %}?last_id=${lastMessageId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.messages && data.messages.length > 0) {
+                    const placeholder = document.getElementById("emptyChatPlaceholder");
+                    if (placeholder) placeholder.remove();
+
+                    const container = document.getElementById("chatMessageWrapper");
+                    
+                    data.messages.forEach(msg => {
+                        // Skip if message already displayed on screen layout via AJAX submission
+                        if (document.querySelector(`[data-msg-id="${msg.id}"]`)) return;
+
+                        const msgDiv = document.createElement("div");
+                        msgDiv.className = "p-2 rounded shadow-sm chat-msg-node";
+                        msgDiv.setAttribute('data-msg-id', msg.id);
+
+                        if (msg.is_me) {
+                            msgDiv.classList.add("border", "ms-auto", "text-end", "text-white");
+                            msgDiv.style.cssText = "max-width: 85%; background: var(--ink-dark); border-color: var(--ink-dark);";
+                            msgDiv.innerHTML = `<span class="fw-bold d-block mb-1 text-light" style="font-size: 0.7rem; opacity: 0.7;">YOU</span><div>${escapeHTML(msg.message)}</div>`;
+                        } else {
+                            msgDiv.classList.add("bg-white", "border");
+                            msgDiv.style.cssText = "max-width: 85%; border-color: var(--gold-light) !important;";
+                            msgDiv.innerHTML = `<span class="fw-bold d-block mb-1 text-muted" style="font-size: 0.7rem;">${escapeHTML(msg.sender.toUpperCase())}</span><div style="color: var(--ink-dark);">${escapeHTML(msg.message)}</div>`;
+                        }
+                        container.appendChild(msgDiv);
+                    });
+                    
+                    updateLastMessageId();
+                    scrollChatToBottom();
+                }
+            }).catch(err => console.error("Polling error sync connection failure:", err));
+    }
+
+    // Safe Statement Handling execution logic pipeline
+    function executeChatSubmission(event) {
+        event.preventDefault();
+        const inputField = document.getElementById("chatInputMessage");
+        const msgText = inputField.value.trim();
+        if (!msgText) return;
+
+        const formData = new FormData();
+        formData.append('message', msgText);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        inputField.value = "";
+
+        fetch("{% url 'send_chat_message' %}", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const placeholder = document.getElementById("emptyChatPlaceholder");
+                if (placeholder) placeholder.remove();
+
+                const container = document.getElementById("chatMessageWrapper");
+                const userDiv = document.createElement("div");
+                userDiv.className = "p-2 rounded border ms-auto text-end text-white shadow-sm chat-msg-node";
+                userDiv.setAttribute('data-msg-id', data.message.id);
+                userDiv.style.cssText = "max-width: 85%; background: var(--ink-dark); border-color: var(--ink-dark);";
+                userDiv.innerHTML = `<span class="fw-bold d-block mb-1 text-light" style="font-size: 0.7rem; opacity: 0.7;">YOU</span><div>${escapeHTML(data.message.message)}</div>`;
+                
+                container.appendChild(userDiv);
+                updateLastMessageId();
+                scrollChatToBottom();
+            }
+        }).catch(err => console.error("Failed to post context change payload:", err));
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
     }
 </script>
 {% endblock %}

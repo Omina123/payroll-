@@ -93,11 +93,11 @@
                 <div class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Payroll Actions</a>
                     <div class="dropdown-menu bg-light m-0">
-                        <a href="{% url 'login' %}" class="dropdown-item">Staff</a>
-                        <a href="#" class="dropdown-item">Process Salaries</a>
-                        <a href="#" class="dropdown-item">Deductions Management</a>
-                        <a href="#" class="dropdown-item">Tax Filing (PAYE)</a>
-                        <a href="#" class="dropdown-item">NHIF/NSSF Reports</a>
+                        <a href="{% url 'login' %}" class="dropdown-item"> LoginStaff</a>
+                        {% comment %} <a href="#" class="dropdown-item">Process Salaries</a> {% endcomment %}
+                        {% comment %} <a href="#" class="dropdown-item">Deductions Management</a> {% endcomment %}
+                        {% comment %} <a href="#" class="dropdown-item">Tax Filing (PAYE)</a> {% endcomment %}
+                        {% comment %} <a href="#" class="dropdown-item">NHIF/NSSF Reports</a> {% endcomment %}
                     </div>
                 </div>
                 <a href="{% url 'contact' %}" class="nav-item nav-link">Contact</a>
